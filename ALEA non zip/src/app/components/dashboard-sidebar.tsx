@@ -11,7 +11,7 @@ import {
   ArrowRightCircle
 } from "lucide-react"
 
-import aleaLogo from "figma:asset/26318c92830d68ea1e1ec06c4251d2ca4b183d14.png";
+
 
 import { Calendar } from "./ui/calendar"
 
@@ -75,7 +75,7 @@ export function DashboardSidebar({ pastShiftsStatus = [], selectedDate, onSelect
             <SidebarMenuButton size="lg" className="mb-6 mt-4 h-auto hover:bg-transparent" asChild>
               <a href="#" className="flex items-center gap-4">
                 <div className="flex aspect-square size-12 items-center justify-center rounded-xl bg-[#F4F1EA] p-2 shrink-0 shadow-md border border-[#EAE5DA]">
-                  <img src={aleaLogo} alt="Alea Logo" className="w-full h-full object-contain" />
+                  <img src="/alea-logo.jpeg" alt="Alea Logo" className="w-full h-full object-contain" />
                 </div>
                 <svg
                   viewBox="0 0 108 40"
