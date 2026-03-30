@@ -2440,6 +2440,7 @@ function App() {
                 </div>
 
                 {/* ── Accesso secondario: Prenotazioni e Gestione Sala ── */}
+                {planTab !== 'inventario' && (
                 <div className={`flex items-center gap-3 pt-4 pb-2 px-1 border-t ${isDinner ? 'border-[#334155]' : 'border-[#EAE5DA]'}`}>
                     <button
                         onClick={() => setActiveView('Prenotazioni')}
@@ -2456,6 +2457,7 @@ function App() {
                         <span>Gestione Sala</span>
                     </button>
                 </div>
+                )}
              </main>
           )}
 
