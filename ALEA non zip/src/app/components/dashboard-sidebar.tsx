@@ -1,5 +1,6 @@
 import * as React from "react"
 
+
 import {
   CalendarDays,
   LayoutDashboard,
@@ -8,7 +9,8 @@ import {
   LayoutGrid,
   LogOut,
   UserCircle,
-  ArrowRightCircle
+  ArrowRightCircle,
+  PiggyBank
 } from "lucide-react"
 
 
@@ -32,6 +34,7 @@ import {
 const gestionaleItems = [
   { title: "Dashboard", url: "#", icon: LayoutDashboard },
   { title: "Pianificazione", url: "#", icon: CalendarRange },
+  { title: "Redditività Menu", url: "#", icon: PiggyBank },
   { title: "Impostazioni", url: "#", icon: Settings },
 ]
 
