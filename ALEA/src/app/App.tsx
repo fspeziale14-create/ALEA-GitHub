@@ -264,20 +264,14 @@ function App() {
       manualPricePerUnit?: number;
       // WAC: storico acquisti { qty in unità base, pricePerUnit in €/unità base, date }
       purchaseHistory?: Array<{ qty: number; pricePerUnit: number; date: string; supplierName: string }>;
-  }>>(() => {
-      try { const s = localStorage.getItem('alea_ingredients'); return s ? JSON.parse(s) : []; } catch { return []; }
-  });
+  }>>([]);
   // Ricette: { dishName, ingredients: [{ ingredientId, qty, pcs_yield? }] }
-  const [recipes, setRecipes] = useState<Record<string, Array<{ ingredientId: string; qty: number; pcs_yield?: number }>>>(() => {
-      try { const s = localStorage.getItem('alea_recipes'); return s ? JSON.parse(s) : {}; } catch { return {}; }
-  });
+  const [recipes, setRecipes] = useState<Record<string, Array<{ ingredientId: string; qty: number; pcs_yield?: number }>>>({});
   // Preparazioni interne: semi-lavorati fatti in casa
   const [preparations, setPreparations] = useState<Array<{
       id: string; name: string; yieldQty: number; yieldUnit: string;
       ingredients: Array<{ ingredientId: string; qty: number }>;
-  }>>(() => {
-      try { const s = localStorage.getItem('alea_preparations'); return s ? JSON.parse(s) : []; } catch { return []; }
-  });
+  }>>([]);
   // Form aggiunta ingrediente
   const [newIngName, setNewIngName] = useState('');
   const [newIngUnit, setNewIngUnit] = useState('g');
@@ -419,16 +413,70 @@ function App() {
   }, [activeTableId]);
 
   // ====== PERSISTENZA LOCALSTORAGE ======
+  // ====== PERSISTENZA SUPABASE — INVENTARIO ======
+  // Carica da Supabase al login
   useEffect(() => {
-      try { localStorage.setItem('alea_ingredients', JSON.stringify(ingredients)); } catch {}
+      if (!isLoggedIn) return;
+      const loadInventory = async () => {
+          const userId = (await supabase.auth.getUser()).data.user?.id;
+          if (!userId) return;
+
+          const { data: ings } = await supabase
+              .from('ingredients').select('data').eq('user_id', userId);
+          if (ings && ings.length > 0) setIngredients(ings.map(r => r.data));
+
+          const { data: recs } = await supabase
+              .from('recipes').select('data').eq('user_id', userId).single();
+          if (recs) setRecipes(recs.data);
+
+          const { data: preps } = await supabase
+              .from('preparations').select('data').eq('user_id', userId);
+          if (preps && preps.length > 0) setPreparations(preps.map(r => r.data));
+      };
+      loadInventory();
+  }, [isLoggedIn]);
+
+  // Salva ingredients su Supabase
+  useEffect(() => {
+      if (!isLoggedIn) return;
+      const save = async () => {
+          const userId = (await supabase.auth.getUser()).data.user?.id;
+          if (!userId) return;
+          await supabase.from('ingredients').delete().eq('user_id', userId);
+          if (ingredients.length > 0) {
+              await supabase.from('ingredients').insert(
+                  ingredients.map(ing => ({ id: ing.id, user_id: userId, data: ing }))
+              );
+          }
+      };
+      save();
   }, [ingredients]);
 
+  // Salva recipes su Supabase
   useEffect(() => {
-      try { localStorage.setItem('alea_recipes', JSON.stringify(recipes)); } catch {}
+      if (!isLoggedIn) return;
+      const save = async () => {
+          const userId = (await supabase.auth.getUser()).data.user?.id;
+          if (!userId) return;
+          await supabase.from('recipes').upsert({ user_id: userId, data: recipes });
+      };
+      save();
   }, [recipes]);
 
+  // Salva preparations su Supabase
   useEffect(() => {
-      try { localStorage.setItem('alea_preparations', JSON.stringify(preparations)); } catch {}
+      if (!isLoggedIn) return;
+      const save = async () => {
+          const userId = (await supabase.auth.getUser()).data.user?.id;
+          if (!userId) return;
+          await supabase.from('preparations').delete().eq('user_id', userId);
+          if (preparations.length > 0) {
+              await supabase.from('preparations').insert(
+                  preparations.map(p => ({ id: p.id, user_id: userId, data: p }))
+              );
+          }
+      };
+      save();
   }, [preparations]);
 
   useEffect(() => {
