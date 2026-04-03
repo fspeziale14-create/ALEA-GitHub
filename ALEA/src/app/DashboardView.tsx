@@ -228,7 +228,7 @@ export function DashboardView(props: DashboardViewProps) {
                             <ClipboardCheck className={`h-4 w-4 ${mutedText}`} />
                         </CardHeader>
                         <CardContent className="flex flex-col gap-4">
-                            <div className="flex gap-4">
+                            <div className="flex flex-col sm:flex-row gap-3">
                                 <div className="flex-1 space-y-1">
                                     <Label className={`text-xs ${mutedText}`}>Coperti Totali Reali</Label>
                                     <Input type="number" placeholder="Es. 145" value={actualCovers} onChange={(e) => setActualCovers(e.target.value)} disabled={currentShiftSaved} className={`h-9 bg-transparent ${isDinner ? 'border-[#475569] text-[#F4F1EA]' : 'border-[#EAE5DA] text-[#2C2A28]'}`} />
@@ -259,20 +259,22 @@ export function DashboardView(props: DashboardViewProps) {
                     </Card>
                 </div>
 
-                <div className="grid gap-8 md:grid-cols-12 lg:h-[520px]">
+                <div className="grid gap-8 md:grid-cols-12 lg:min-h-[520px]">
                     {/* CARD PREVISIONE — metà larghezza */}
-                    <Card className={`md:col-span-6 flex flex-col justify-center items-center relative overflow-hidden ${cardBg}`}>
-                        <div className="absolute top-5 left-5 flex items-center gap-2">
+                    <Card className={`md:col-span-6 flex flex-col justify-between relative overflow-hidden ${cardBg}`}>
+                        {/* Header badge */}
+                        <div className="flex items-center gap-2 px-5 pt-5 pb-2">
                              <div className={`p-1.5 rounded-full ${accentBg}`}><TrendingUp className={`w-4 h-4 ${accentColor}`} /></div>
                              <span className={`${accentColor} font-bold text-xs tracking-wide`}>MOTORE PREDITTIVO ALEA</span>
                         </div>
-                        <div className="text-center z-10 px-4">
+                        {/* Contenuto centrale */}
+                        <div className="text-center z-10 px-4 py-4 flex flex-col items-center flex-1 justify-center">
                             <h2 className={`${mutedText} font-medium mb-2 uppercase tracking-widest text-xs`}>Coperti Previsti — {shift === 'pranzo' ? 'Pranzo' : 'Cena'}</h2>
-                            <div className={`text-[7rem] font-bold leading-none tracking-tighter tabular-nums ${textColor}`}>
+                            <div className={`text-[4.5rem] sm:text-[6rem] lg:text-[7rem] font-bold leading-none tracking-tighter tabular-nums ${textColor}`}>
                                 {predictedCovers > maxCapacity ? (<span className="text-red-500">{predictedCovers}</span>) : (predictedCovers)}
                             </div>
                             {previsioneGiorno && (
-                                <p className={`${mutedText} mt-1 text-sm`}>
+                                <p className={`${mutedText} mt-2 text-sm`}>
                                     Forchetta: <span className={accentColor}>
                                         {shift === 'pranzo' ? previsioneGiorno.pranzo.lo : previsioneGiorno.cena.lo}
                                     </span> — <span className={accentColor}>
@@ -280,25 +282,25 @@ export function DashboardView(props: DashboardViewProps) {
                                     </span>
                                 </p>
                             )}
-                            <div className={`mt-2 flex items-center justify-center gap-3 text-xs`}>
+                            <div className={`mt-3 flex items-center justify-center gap-4 text-xs`}>
                                 <div className="text-center">
                                     <span className={`block uppercase tracking-wider ${mutedText}`}>Prenotati</span>
-                                    <span className={`font-bold ${textColor}`}>{parseInt(bookedGuests || '0')}</span>
+                                    <span className={`text-lg font-bold ${textColor}`}>{parseInt(bookedGuests || '0')}</span>
                                 </div>
-                                <span className={mutedText}>+</span>
+                                <span className={`text-lg ${mutedText}`}>+</span>
                                 <div className="text-center">
                                     <span className={`block uppercase tracking-wider ${mutedText}`}>Walk-in</span>
-                                    <span className={`font-bold ${accentColor}`}>{Math.max(0, predictedCovers - parseInt(bookedGuests || '0'))}</span>
+                                    <span className={`text-lg font-bold ${accentColor}`}>{Math.max(0, predictedCovers - parseInt(bookedGuests || '0'))}</span>
                                 </div>
                             </div>
                             {predictedCovers > maxCapacity && (
-                                <p className="text-red-500 text-xs font-bold mt-2 bg-red-500/10 px-3 py-1 rounded-full border border-red-500/30">⚠️ Overbooking: supera capienza {maxCapacity}</p>
+                                <p className="text-red-500 text-xs font-bold mt-3 bg-red-500/10 px-3 py-1.5 rounded-full border border-red-500/30">⚠️ Overbooking: supera capienza {maxCapacity}</p>
                             )}
                         </div>
                         <div className={`absolute -right-20 -bottom-20 w-96 h-96 ${isDinner ? 'bg-[#967D62]/5' : 'bg-[#967D62]/10'} rounded-full blur-3xl pointer-events-none`} />
-                        {/* Barra attendibilità */}
-                        <div className="absolute bottom-0 left-0 right-0 z-10">
-                            <div className="px-4 py-1.5 flex items-center justify-between">
+                        {/* Barra attendibilità — in flow, non absolute */}
+                        <div className="relative z-10 mt-auto">
+                            <div className="px-4 py-1.5 flex items-center justify-between flex-wrap gap-1">
                                 <span className={`text-[10px] font-semibold uppercase tracking-wider ${mutedText}`}>Attendibilità</span>
                                 <span className="text-[10px] font-bold" style={{ color: dailyAttendibilita.coloreBar }}>
                                     {dailyAttendibilita.livello.charAt(0).toUpperCase() + dailyAttendibilita.livello.slice(1)} — {dailyAttendibilita.motivazione}
