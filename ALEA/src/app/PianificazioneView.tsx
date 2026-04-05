@@ -1,3 +1,4 @@
+import React from 'react';
 import { AttendibilitaResult } from './engine';
 import {
   Users, CalendarRange, Boxes, ClipboardList, CookingPot,
@@ -18,8 +19,8 @@ interface PianificazioneViewProps {
   accentColor: string; accentBg: string;
   selectedDate: string;
   // pianificazione tabs
-  planTab: 'sala' | 'inventario' | 'preparazioni' | 'cucina';
-  setPlanTab: (v: 'sala' | 'inventario' | 'preparazioni' | 'cucina') => void;
+  planTab: 'sala' | 'inventario' | 'ricette' | 'cucina';
+  setPlanTab: (v: 'sala' | 'inventario' | 'ricette' | 'cucina') => void;
   // staff
   weekGenerated: boolean; isGeneratingStaff: boolean;
   weeklyStaffData: any[]; staffDateRange: { start: string; end: string };
@@ -146,6 +147,11 @@ export function PianificazioneView(props: PianificazioneViewProps) {
     return [baseUnit];
   };
 
+  // State locale per tracciare quale prep ha il dropdown ingrediente aperto (separato da editingPrepId)
+  const [activePrepIngDropdownId, setActivePrepIngDropdownId] = React.useState<string | null>(null);
+  // State locale per tenere aperte le preparazioni (tendina) — di default tutte chiuse
+  const [openPrepIds, setOpenPrepIds] = React.useState<Set<string>>(new Set());
+
   // Converte qty da fromUnit a baseUnit per normalizzare. Usa convertToUnit se disponibile, fallback manuale.
   const normalizeToBase = (qty: number, fromUnit: string, baseUnit: string): number => {
     if (fromUnit === baseUnit) return qty;
@@ -157,6 +163,9 @@ export function PianificazioneView(props: PianificazioneViewProps) {
     if (fFrom && fTo) return qty * fFrom / fTo;
     return qty;
   };
+
+  // Arrotonda per difetto a 2 decimali (evita valori brutti tipo 0.99999)
+  const floor2 = (n: number) => Math.floor(n * 100) / 100;
 
   return (
              <main className="flex-1 p-6 md:p-8 max-w-6xl mx-auto w-full">
@@ -184,8 +193,8 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                     <div className={`flex flex-wrap gap-1 p-1 rounded-lg border w-fit mb-6 ${isDinner ? 'bg-[#0F172A] border-[#334155]' : 'bg-black/5 border-[#EAE5DA]'}`}>
                         {[
                             { key: 'sala',         label: 'Convocazioni Sala',  icon: Users },
-                            { key: 'inventario',   label: 'Inventario',          icon: ClipboardList },
-                            { key: 'preparazioni', label: 'Preparazioni',        icon: CookingPot },
+                            { key: 'inventario',   label: 'Magazzino',           icon: ClipboardList },
+                            { key: 'ricette',      label: 'Ricette',             icon: BookOpen },
                             { key: 'cucina',       label: 'Volumi e Budget',     icon: Boxes },
                         ].map(({ key, label, icon: Icon }) => (
                             <button key={key} onClick={() => setPlanTab(key as any)} className={`px-4 py-2 rounded-md text-sm font-semibold transition-all flex items-center gap-2 ${planTab === key ? (isDinner ? 'bg-[#334155] text-[#F4F1EA] shadow-sm border border-[#475569]' : 'bg-white text-[#967D62] shadow-sm') : (isDinner ? 'text-[#94A3B8] hover:text-[#F4F1EA]' : 'text-[#8C8A85] hover:text-[#2C2A28]')}`}>
@@ -256,215 +265,137 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                                                 }
                                                 return null;
                                             })()}
-                                            {/* Riga 2: Fornitore / Preparazione */}
+                                            {/* Riga 2: Fornitore */}
                                             {(() => {
                                                 const existingIng = ingredients.find(i => i.name.toLowerCase() === newIngName.toLowerCase());
                                                 const existingSuppliers = existingIng?.suppliers || [];
                                                 const selectedSupplierData = existingSuppliers.find(s => s.name === newIngSelectedSupplier);
-                                                const matchingPrep = preparations.find(pr => pr.name.toLowerCase() === newIngName.toLowerCase());
-                                                const isPrepMode = newIngSupplierMode === ('preparazione' as any);
                                                 return (
                                                     <div className="space-y-2">
-                                                        <Label className={`text-xs ${mutedText}`}>{isPrepMode ? 'Registra Produzione' : 'Fornitore'}</Label>
-                                                        {/* Bottoni modalità */}
+                                                        <Label className={`text-xs ${mutedText}`}>Fornitore</Label>
                                                         <div className="flex gap-1 mb-1 flex-wrap">
-                                                            {existingSuppliers.length > 0 && !isPrepMode && (
+                                                            {existingSuppliers.length > 0 && (
                                                                 <button onClick={() => { setNewIngSupplierMode('existing'); setNewIngBoxCount(''); }} className={`px-3 py-1.5 rounded-md text-xs font-semibold border transition-colors ${newIngSupplierMode === 'existing' ? 'bg-[#967D62] text-white border-[#967D62]' : (isDinner ? 'border-[#334155] text-[#94A3B8]' : 'border-[#EAE5DA] text-[#8C8A85]')}`}>Esistente</button>
                                                             )}
-                                                            {!isPrepMode ? (
-                                                                <button onClick={() => { setNewIngSupplierMode('new'); setNewIngSelectedSupplier(''); setNewIngBoxCount(''); }} className={`px-3 py-1.5 rounded-md text-xs font-semibold border transition-colors ${newIngSupplierMode === 'new' ? 'bg-[#967D62] text-white border-[#967D62]' : (isDinner ? 'border-[#334155] text-[#94A3B8]' : 'border-[#EAE5DA] text-[#8C8A85]')}`}>Nuovo</button>
-                                                            ) : (
-                                                                <button onClick={() => { setNewIngSupplierMode('new'); setNewIngBoxCount(''); setNewPrepEditingIdeal(false); setNewPrepIdealQty(''); }} className={`px-3 py-1.5 rounded-md text-xs font-semibold border transition-colors ${isDinner ? 'border-[#334155] text-[#94A3B8]' : 'border-[#EAE5DA] text-[#8C8A85]'}`}>Fornitore</button>
-                                                            )}
-                                                            {matchingPrep && (
-                                                                <button onClick={() => { setNewIngSupplierMode('preparazione' as any); setNewIngBoxCount(''); }} className={`px-3 py-1.5 rounded-md text-xs font-semibold border transition-colors flex items-center gap-1 ${isPrepMode ? 'bg-[#967D62] text-white border-[#967D62]' : (isDinner ? 'border-[#334155] text-[#94A3B8]' : 'border-[#EAE5DA] text-[#8C8A85]')}`}><CookingPot className="w-3 h-3" /> Preparazione</button>
-                                                            )}
+                                                            <button onClick={() => { setNewIngSupplierMode('new'); setNewIngSelectedSupplier(''); setNewIngBoxCount(''); }} className={`px-3 py-1.5 rounded-md text-xs font-semibold border transition-colors ${newIngSupplierMode === 'new' ? 'bg-[#967D62] text-white border-[#967D62]' : (isDinner ? 'border-[#334155] text-[#94A3B8]' : 'border-[#EAE5DA] text-[#8C8A85]')}`}>Nuovo</button>
                                                         </div>
-
-                                                        {isPrepMode && matchingPrep ? (
-                                                            /* ── Modalità PREPARAZIONE ── */
-                                                            <div className={`p-3 rounded-lg border space-y-2 ${isDinner ? 'bg-[#1E293B] border-[#334155]' : 'bg-white border-[#EAE5DA]'}`}>
-                                                                <p className={`text-xs ${mutedText}`}>Batch di <strong className={textColor}>{matchingPrep.name}</strong> — resa canonica: {matchingPrep.yieldQty}{matchingPrep.yieldUnit}</p>
-                                                                <div className="space-y-1">
-                                                                    <Label className={`text-xs ${mutedText}`}>Quantità prodotta ({matchingPrep.yieldUnit})</Label>
-                                                                    <Input type="number" placeholder={`Es. ${matchingPrep.yieldQty}`} value={newIngBoxCount} onChange={e => setNewIngBoxCount(e.target.value)} className={isDinner ? 'border-[#334155] bg-[#1E293B]' : 'border-[#EAE5DA]'} />
+                                                        {(newIngSupplierMode === 'new' || existingSuppliers.length === 0) ? (
+                                                            <Input placeholder="Nome fornitore" value={newIngSupplierName} onChange={e => setNewIngSupplierName(e.target.value)} className={`w-full ${isDinner ? 'border-[#334155] bg-[#1E293B]' : 'border-[#EAE5DA]'}`} />
+                                                        ) : (
+                                                            <select value={newIngSelectedSupplier} onChange={e => setNewIngSelectedSupplier(e.target.value)} className={`w-full rounded-md border text-sm px-2 h-9 ${isDinner ? 'border-[#334155] bg-[#1E293B] text-[#F4F1EA]' : 'border-[#EAE5DA] bg-white text-[#2C2A28]'}`}>
+                                                                <option value="">Seleziona fornitore</option>
+                                                                {existingSuppliers.map(s => <option key={s.name} value={s.name}>{s.name} ({s.qtyPerBox}{s.unit || newIngUnit}/scatolone)</option>)}
+                                                            </select>
+                                                        )}
+                                                        {(newIngSupplierMode === 'new' || existingSuppliers.length === 0) && (
+                                                            <div className="flex gap-2 items-end">
+                                                                <div className="flex-1 space-y-1">
+                                                                    <Label className={`text-xs ${mutedText}`}>Qtà in 1 scatolone</Label>
+                                                                    <div className="flex items-center gap-1">
+                                                                        <Input type="number" placeholder={`Es. 25`} value={newIngQtyPerBox} onChange={e => setNewIngQtyPerBox(e.target.value)} className={isDinner ? 'border-[#334155] bg-[#1E293B]' : 'border-[#EAE5DA]'} />
+                                                                        <span className={`text-xs whitespace-nowrap ${mutedText}`}>{newIngUnit}</span>
+                                                                    </div>
                                                                 </div>
+                                                                <div className="flex-1 space-y-1">
+                                                                    <Label className={`text-xs ${mutedText}`}>Prezzo scatolone</Label>
+                                                                    <div className="flex items-center gap-1">
+                                                                        <span className={`text-xs ${mutedText}`}>€</span>
+                                                                        <Input type="number" placeholder="Es. 18.50" value={newIngPricePerBox} onChange={e => setNewIngPricePerBox(e.target.value)} className={isDinner ? 'border-[#334155] bg-[#1E293B]' : 'border-[#EAE5DA]'} />
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                        {newIngSupplierMode === 'existing' && existingSuppliers.length > 0 && (() => {
+                                                            const existingPrice = selectedSupplierData?.pricePerBox;
+                                                            return (
                                                                 <div className="space-y-1">
-                                                                    <Label className={`text-xs ${mutedText}`}>Quantità ideale in magazzino ({matchingPrep.yieldUnit})</Label>
-                                                                    {matchingPrep.idealQty > 0 && !newPrepEditingIdeal ? (
+                                                                    <Label className={`text-xs ${mutedText}`}>Prezzo scatolone</Label>
+                                                                    {!newIngEditingPrice ? (
                                                                         <div className={`flex items-center gap-2 h-9 px-3 rounded-md border ${isDinner ? 'border-[#334155] bg-[#1E293B]' : 'border-[#EAE5DA] bg-gray-100'}`}>
-                                                                            <span className={`flex-1 text-sm ${mutedText}`}>{matchingPrep.idealQty}{matchingPrep.yieldUnit}</span>
-                                                                            <button onClick={() => { setNewPrepEditingIdeal(true); setNewPrepIdealQty(String(matchingPrep.idealQty)); }} className={`${mutedText} hover:text-[#967D62] transition-colors`}><Pencil className="w-3.5 h-3.5" /></button>
+                                                                            <span className={`text-xs ${mutedText}`}>€</span>
+                                                                            <span className={`flex-1 text-sm ${mutedText}`}>{existingPrice?.toFixed(2) ?? '—'}</span>
+                                                                            <button onClick={() => { setNewIngEditingPrice(true); setNewIngPricePerBox(String(existingPrice ?? '')); }} className={`${mutedText} hover:text-[#967D62] transition-colors`}><Pencil className="w-3.5 h-3.5" /></button>
                                                                         </div>
                                                                     ) : (
-                                                                        <Input type="number" placeholder="Es. 1000" value={newPrepIdealQty} onChange={e => setNewPrepIdealQty(e.target.value)} className={isDinner ? 'border-[#334155] bg-[#1E293B]' : 'border-[#EAE5DA]'} />
+                                                                        <div className="flex items-center gap-1">
+                                                                            <span className={`text-xs ${mutedText}`}>€</span>
+                                                                            <Input type="number" placeholder="Es. 18.50" value={newIngPricePerBox} onChange={e => setNewIngPricePerBox(e.target.value)} className={isDinner ? 'border-[#334155] bg-[#1E293B]' : 'border-[#EAE5DA]'} />
+                                                                        </div>
                                                                     )}
                                                                 </div>
-                                                                {newIngBoxCount && Number(newIngBoxCount) > 0 && matchingPrep.yieldQty > 0 && (
-                                                                    <div className={`p-2 rounded-lg text-xs space-y-1 ${isDinner ? 'bg-[#0F172A]' : 'bg-gray-50'}`}>
-                                                                        <p className={`font-semibold ${mutedText}`}>Verrà scalato dal magazzino:</p>
-                                                                        {matchingPrep.ingredients.map(row => {
-                                                                            const ingRow = ingredients.find(i => i.id === row.ingredientId);
-                                                                            if (!ingRow) return null;
-                                                                            const ratio = Number(newIngBoxCount) / matchingPrep.yieldQty;
-                                                                            const qtyInBase = normalizeToBase(row.qty, row.unit ?? ingRow.unit, ingRow.unit);
-                                                                            return (
-                                                                                <div key={row.ingredientId} className={`flex justify-between ${textColor}`}>
-                                                                                    <span>{ingRow.name}</span>
-                                                                                    <span className="font-mono">−{(qtyInBase * ratio).toFixed(2)}{ingRow.unit}</span>
-                                                                                </div>
-                                                                            );
-                                                                        })}
-                                                                    </div>
-                                                                )}
-                                                                <Button onClick={() => {
-                                                                    const batchQty = Number(newIngBoxCount);
-                                                                    if (!batchQty || batchQty <= 0 || matchingPrep.yieldQty <= 0) return;
-                                                                    const ratio = batchQty / matchingPrep.yieldQty;
-                                                                    // Scala ingredienti dal magazzino
-                                                                    setIngredients(prev => {
-                                                                        const updated = [...prev];
-                                                                        matchingPrep.ingredients.forEach(row => {
-                                                                            const idx = updated.findIndex(i => i.id === row.ingredientId);
-                                                                            if (idx !== -1) {
-                                                                                const qtyInBase = normalizeToBase(row.qty, row.unit ?? updated[idx].unit, updated[idx].unit);
-                                                                                updated[idx] = { ...updated[idx], currentQty: Math.max(0, updated[idx].currentQty - qtyInBase * ratio) };
-                                                                            }
-                                                                        });
-                                                                        return updated;
-                                                                    });
-                                                                    // Aggiorna currentQty e idealQty della preparazione
-                                                                    const newIdeal = newPrepEditingIdeal && newPrepIdealQty ? Number(newPrepIdealQty) : (matchingPrep.idealQty > 0 ? matchingPrep.idealQty : (newPrepIdealQty ? Number(newPrepIdealQty) : 0));
-                                                                    setPreparations(prev => prev.map(pr => pr.id === matchingPrep.id
-                                                                        ? { ...pr, currentQty: pr.currentQty + batchQty, idealQty: newIdeal }
-                                                                        : pr));
-                                                                    setNewIngName(''); setNewIngBoxCount(''); setNewIngSupplierMode('new'); setNewPrepEditingIdeal(false); setNewPrepIdealQty('');
-                                                                }} className="w-full bg-[#967D62] hover:bg-[#7A654E] text-white">
-                                                                    <Check className="w-4 h-4 mr-2" /> Registra Produzione
-                                                                </Button>
+                                                            );
+                                                        })()}
+                                                        {/* Riga 4: Numero scatoloni + Qt ideale + bottone */}
+                                                        <div className="flex gap-2 items-end">
+                                                            <div className="space-y-1">
+                                                                <Label className={`text-xs ${mutedText}`}>N° scatoloni</Label>
+                                                                <Input type="number" placeholder="Es. 3" value={newIngBoxCount} onChange={e => setNewIngBoxCount(e.target.value)} className={`w-24 ${isDinner ? 'border-[#334155] bg-[#1E293B]' : 'border-[#EAE5DA]'}`} />
                                                             </div>
-                                                        ) : (
-                                                            /* ── Modalità FORNITORE (Nuovo o Esistente) ── */
-                                                            <>
-                                                                {(newIngSupplierMode === 'new' || existingSuppliers.length === 0) ? (
-                                                                    <Input placeholder="Nome fornitore" value={newIngSupplierName} onChange={e => setNewIngSupplierName(e.target.value)} className={`w-full ${isDinner ? 'border-[#334155] bg-[#1E293B]' : 'border-[#EAE5DA]'}`} />
-                                                                ) : (
-                                                                    <select value={newIngSelectedSupplier} onChange={e => setNewIngSelectedSupplier(e.target.value)} className={`w-full rounded-md border text-sm px-2 h-9 ${isDinner ? 'border-[#334155] bg-[#1E293B] text-[#F4F1EA]' : 'border-[#EAE5DA] bg-white text-[#2C2A28]'}`}>
-                                                                        <option value="">Seleziona fornitore</option>
-                                                                        {existingSuppliers.map(s => <option key={s.name} value={s.name}>{s.name} ({s.qtyPerBox}{s.unit || newIngUnit}/scatolone)</option>)}
-                                                                    </select>
-                                                                )}
-                                                                {(newIngSupplierMode === 'new' || existingSuppliers.length === 0) && (
-                                                                    <div className="flex gap-2 items-end">
-                                                                        <div className="flex-1 space-y-1">
-                                                                            <Label className={`text-xs ${mutedText}`}>Qtà in 1 scatolone</Label>
-                                                                            <div className="flex items-center gap-1">
-                                                                                <Input type="number" placeholder={`Es. 25`} value={newIngQtyPerBox} onChange={e => setNewIngQtyPerBox(e.target.value)} className={isDinner ? 'border-[#334155] bg-[#1E293B]' : 'border-[#EAE5DA]'} />
-                                                                                <span className={`text-xs whitespace-nowrap ${mutedText}`}>{newIngUnit}</span>
+                                                            <div className="flex-1 space-y-1">
+                                                                <Label className={`text-xs ${mutedText}`}>Quantità ideale</Label>
+                                                                {(() => {
+                                                                    const isExisting = ingredients.some(i => i.name.toLowerCase() === newIngName.toLowerCase());
+                                                                    const existingIdeal = ingredients.find(i => i.name.toLowerCase() === newIngName.toLowerCase())?.idealQty;
+                                                                    if (isExisting && !newIngEditingIdeal) {
+                                                                        return (
+                                                                            <div className={`flex items-center gap-2 h-9 px-3 rounded-md border ${isDinner ? 'border-[#334155] bg-[#1E293B]' : 'border-[#EAE5DA] bg-gray-100'}`}>
+                                                                                <span className={`flex-1 text-sm ${mutedText}`}>{existingIdeal}{newIngUnit}</span>
+                                                                                <button onClick={() => { setNewIngEditingIdeal(true); setNewIngIdeal(String(existingIdeal)); }} className={`${mutedText} hover:text-[#967D62] transition-colors`}><Pencil className="w-3.5 h-3.5" /></button>
                                                                             </div>
-                                                                        </div>
-                                                                        <div className="flex-1 space-y-1">
-                                                                            <Label className={`text-xs ${mutedText}`}>Prezzo scatolone</Label>
-                                                                            <div className="flex items-center gap-1">
-                                                                                <span className={`text-xs ${mutedText}`}>€</span>
-                                                                                <Input type="number" placeholder="Es. 18.50" value={newIngPricePerBox} onChange={e => setNewIngPricePerBox(e.target.value)} className={isDinner ? 'border-[#334155] bg-[#1E293B]' : 'border-[#EAE5DA]'} />
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                )}
-                                                                {newIngSupplierMode === 'existing' && existingSuppliers.length > 0 && (() => {
-                                                                    const existingPrice = selectedSupplierData?.pricePerBox;
-                                                                    return (
-                                                                        <div className="space-y-1">
-                                                                            <Label className={`text-xs ${mutedText}`}>Prezzo scatolone</Label>
-                                                                            {!newIngEditingPrice ? (
-                                                                                <div className={`flex items-center gap-2 h-9 px-3 rounded-md border ${isDinner ? 'border-[#334155] bg-[#1E293B]' : 'border-[#EAE5DA] bg-gray-100'}`}>
-                                                                                    <span className={`text-xs ${mutedText}`}>€</span>
-                                                                                    <span className={`flex-1 text-sm ${mutedText}`}>{existingPrice?.toFixed(2) ?? '—'}</span>
-                                                                                    <button onClick={() => { setNewIngEditingPrice(true); setNewIngPricePerBox(String(existingPrice ?? '')); }} className={`${mutedText} hover:text-[#967D62] transition-colors`}><Pencil className="w-3.5 h-3.5" /></button>
-                                                                                </div>
-                                                                            ) : (
-                                                                                <div className="flex items-center gap-1">
-                                                                                    <span className={`text-xs ${mutedText}`}>€</span>
-                                                                                    <Input type="number" placeholder="Es. 18.50" value={newIngPricePerBox} onChange={e => setNewIngPricePerBox(e.target.value)} className={isDinner ? 'border-[#334155] bg-[#1E293B]' : 'border-[#EAE5DA]'} />
-                                                                                </div>
-                                                                            )}
-                                                                        </div>
-                                                                    );
-                                                                })()}
-                                                                {/* Riga 4: Numero scatoloni + Qt ideale + bottone */}
-                                                                <div className="flex gap-2 items-end">
-                                                                    <div className="space-y-1">
-                                                                        <Label className={`text-xs ${mutedText}`}>N° scatoloni</Label>
-                                                                        <Input type="number" placeholder="Es. 3" value={newIngBoxCount} onChange={e => setNewIngBoxCount(e.target.value)} className={`w-24 ${isDinner ? 'border-[#334155] bg-[#1E293B]' : 'border-[#EAE5DA]'}`} />
-                                                                    </div>
-                                                                    <div className="flex-1 space-y-1">
-                                                                        <Label className={`text-xs ${mutedText}`}>Quantità ideale</Label>
-                                                                        {(() => {
-                                                                            const isExisting = ingredients.some(i => i.name.toLowerCase() === newIngName.toLowerCase());
-                                                                            const existingIdeal = ingredients.find(i => i.name.toLowerCase() === newIngName.toLowerCase())?.idealQty;
-                                                                            if (isExisting && !newIngEditingIdeal) {
-                                                                                return (
-                                                                                    <div className={`flex items-center gap-2 h-9 px-3 rounded-md border ${isDinner ? 'border-[#334155] bg-[#1E293B]' : 'border-[#EAE5DA] bg-gray-100'}`}>
-                                                                                        <span className={`flex-1 text-sm ${mutedText}`}>{existingIdeal}{newIngUnit}</span>
-                                                                                        <button onClick={() => { setNewIngEditingIdeal(true); setNewIngIdeal(String(existingIdeal)); }} className={`${mutedText} hover:text-[#967D62] transition-colors`}><Pencil className="w-3.5 h-3.5" /></button>
-                                                                                    </div>
-                                                                                );
-                                                                            }
-                                                                            return <Input type="number" placeholder="Es. 5000" value={newIngIdeal} onChange={e => setNewIngIdeal(e.target.value)} className={isDinner ? 'border-[#334155] bg-[#1E293B]' : 'border-[#EAE5DA]'} />;
-                                                                        })()}
-                                                                    </div>
-                                                                    <Button onClick={() => {
-                                                                        const qtyPerBox = newIngSupplierMode === 'existing' && selectedSupplierData ? selectedSupplierData.qtyPerBox : Number(newIngQtyPerBox);
-                                                                        const boxes = Number(newIngBoxCount);
-                                                                        const supplierName = newIngSupplierMode === 'existing' ? newIngSelectedSupplier : newIngSupplierName;
-                                                                        const effectivePricePerBox = newIngSupplierMode === 'existing' && !newIngEditingPrice && selectedSupplierData
-                                                                            ? selectedSupplierData.pricePerBox
-                                                                            : Number(newIngPricePerBox);
-                                                                        const isExistingIng = ingredients.some(i => i.name.toLowerCase() === newIngName.toLowerCase());
-                                                                        const effectiveIdeal = isExistingIng && !newIngEditingIdeal
-                                                                            ? String(ingredients.find(i => i.name.toLowerCase() === newIngName.toLowerCase())?.idealQty || '')
-                                                                            : newIngIdeal;
-                                                                        if (!newIngName || !effectiveIdeal || !boxes || !qtyPerBox || !supplierName || !effectivePricePerBox) return;
-                                                                        const existingIngForConv = ingredients.find(i => i.name.toLowerCase() === newIngName.toLowerCase());
-                                                                        const origUnit = existingIngForConv?.unit || newIngUnit;
-                                                                        const wg = ['g','kg']; const lq = ['ml','l','cl'];
-                                                                        const incompatible = existingIngForConv && (
-                                                                            (isPieceUnit(origUnit) && !isPieceUnit(newIngUnit)) ||
-                                                                            (!isPieceUnit(origUnit) && isPieceUnit(newIngUnit)) ||
-                                                                            (wg.includes(origUnit) && lq.includes(newIngUnit)) ||
-                                                                            (lq.includes(origUnit) && wg.includes(newIngUnit))
                                                                         );
-                                                                        if (incompatible) return;
-                                                                        const rawQty = qtyPerBox * boxes;
-                                                                        const supplierUnit = newIngSupplierMode === 'existing' && selectedSupplierData?.unit ? selectedSupplierData.unit : newIngUnit;
-                                                                        const converted = existingIngForConv ? convertToUnit(rawQty, supplierUnit, origUnit) : rawQty;
-                                                                        const totalQty = converted !== null ? converted : rawQty;
-                                                                        const existingIdx = ingredients.findIndex(i => i.name.toLowerCase() === newIngName.toLowerCase());
-                                                                        const pricePerBaseUnit = qtyPerBox > 0 ? effectivePricePerBox / qtyPerBox : 0;
-                                                                        const purchaseRecord = { qty: totalQty, pricePerUnit: pricePerBaseUnit, date: new Date().toISOString().split('T')[0], supplierName };
-                                                                        if (existingIdx >= 0) {
-                                                                            setIngredients(prev => prev.map((ing, idx) => {
-                                                                                if (idx !== existingIdx) return ing;
-                                                                                const updatedSuppliers = ing.suppliers || [];
-                                                                                const supIdx = updatedSuppliers.findIndex(s => s.name === supplierName);
-                                                                                const newSuppliers = supIdx >= 0
-                                                                                    ? updatedSuppliers.map(s => s.name === supplierName ? { ...s, pricePerBox: effectivePricePerBox } : s)
-                                                                                    : [...updatedSuppliers, { name: supplierName, qtyPerBox, pricePerBox: effectivePricePerBox, unit: newIngUnit }];
-                                                                                const updatedIdeal = newIngEditingIdeal && newIngIdeal ? Number(newIngIdeal) : Number(effectiveIdeal) || ing.idealQty;
-                                                                                return { ...ing, currentQty: ing.currentQty + totalQty, idealQty: updatedIdeal, suppliers: newSuppliers, purchaseHistory: [...(ing.purchaseHistory || []), purchaseRecord] };
-                                                                            }));
-                                                                        } else {
-                                                                            const id = Date.now().toString();
-                                                                            setIngredients(prev => [...prev, { id, name: newIngName, unit: newIngUnit, idealQty: Number(effectiveIdeal), currentQty: totalQty, suppliers: [{ name: supplierName, qtyPerBox, pricePerBox: effectivePricePerBox, unit: newIngUnit }], purchaseHistory: [purchaseRecord] }]);
-                                                                        }
-                                                                        setNewIngName(''); setNewIngIdeal(''); setNewIngSupplierName(''); setNewIngQtyPerBox(''); setNewIngBoxCount(''); setNewIngSelectedSupplier(''); setNewIngSupplierMode('new'); setNewIngEditingIdeal(false); setNewIngPricePerBox(''); setNewIngEditingPrice(false);
-                                                                    }} className="bg-[#967D62] hover:bg-[#7A654E] text-white px-4">
-                                                                        <Plus className="w-4 h-4" />
-                                                                    </Button>
-                                                                </div>
-                                                            </>
-                                                        )}
+                                                                    }
+                                                                    return <Input type="number" placeholder="Es. 5000" value={newIngIdeal} onChange={e => setNewIngIdeal(e.target.value)} className={isDinner ? 'border-[#334155] bg-[#1E293B]' : 'border-[#EAE5DA]'} />;
+                                                                })()}
+                                                            </div>
+                                                            <Button onClick={() => {
+                                                                const qtyPerBox = newIngSupplierMode === 'existing' && selectedSupplierData ? selectedSupplierData.qtyPerBox : Number(newIngQtyPerBox);
+                                                                const boxes = Number(newIngBoxCount);
+                                                                const supplierName = newIngSupplierMode === 'existing' ? newIngSelectedSupplier : newIngSupplierName;
+                                                                const effectivePricePerBox = newIngSupplierMode === 'existing' && !newIngEditingPrice && selectedSupplierData
+                                                                    ? selectedSupplierData.pricePerBox
+                                                                    : Number(newIngPricePerBox);
+                                                                const isExistingIng = ingredients.some(i => i.name.toLowerCase() === newIngName.toLowerCase());
+                                                                const effectiveIdeal = isExistingIng && !newIngEditingIdeal
+                                                                    ? String(ingredients.find(i => i.name.toLowerCase() === newIngName.toLowerCase())?.idealQty || '')
+                                                                    : newIngIdeal;
+                                                                if (!newIngName || !effectiveIdeal || !boxes || !qtyPerBox || !supplierName || !effectivePricePerBox) return;
+                                                                const existingIngForConv = ingredients.find(i => i.name.toLowerCase() === newIngName.toLowerCase());
+                                                                const origUnit = existingIngForConv?.unit || newIngUnit;
+                                                                const wg = ['g','kg']; const lq = ['ml','l','cl'];
+                                                                const incompatible = existingIngForConv && (
+                                                                    (isPieceUnit(origUnit) && !isPieceUnit(newIngUnit)) ||
+                                                                    (!isPieceUnit(origUnit) && isPieceUnit(newIngUnit)) ||
+                                                                    (wg.includes(origUnit) && lq.includes(newIngUnit)) ||
+                                                                    (lq.includes(origUnit) && wg.includes(newIngUnit))
+                                                                );
+                                                                if (incompatible) return;
+                                                                const rawQty = qtyPerBox * boxes;
+                                                                const supplierUnit = newIngSupplierMode === 'existing' && selectedSupplierData?.unit ? selectedSupplierData.unit : newIngUnit;
+                                                                const converted = existingIngForConv ? convertToUnit(rawQty, supplierUnit, origUnit) : rawQty;
+                                                                const totalQty = converted !== null ? converted : rawQty;
+                                                                const existingIdx = ingredients.findIndex(i => i.name.toLowerCase() === newIngName.toLowerCase());
+                                                                const pricePerBaseUnit = qtyPerBox > 0 ? effectivePricePerBox / qtyPerBox : 0;
+                                                                const purchaseRecord = { qty: totalQty, pricePerUnit: pricePerBaseUnit, date: new Date().toISOString().split('T')[0], supplierName };
+                                                                if (existingIdx >= 0) {
+                                                                    setIngredients(prev => prev.map((ing, idx) => {
+                                                                        if (idx !== existingIdx) return ing;
+                                                                        const updatedSuppliers = ing.suppliers || [];
+                                                                        const supIdx = updatedSuppliers.findIndex(s => s.name === supplierName);
+                                                                        const newSuppliers = supIdx >= 0
+                                                                            ? updatedSuppliers.map(s => s.name === supplierName ? { ...s, pricePerBox: effectivePricePerBox } : s)
+                                                                            : [...updatedSuppliers, { name: supplierName, qtyPerBox, pricePerBox: effectivePricePerBox, unit: newIngUnit }];
+                                                                        const updatedIdeal = newIngEditingIdeal && newIngIdeal ? Number(newIngIdeal) : Number(effectiveIdeal) || ing.idealQty;
+                                                                        return { ...ing, currentQty: ing.currentQty + totalQty, idealQty: updatedIdeal, suppliers: newSuppliers, purchaseHistory: [...(ing.purchaseHistory || []), purchaseRecord] };
+                                                                    }));
+                                                                } else {
+                                                                    const id = Date.now().toString();
+                                                                    setIngredients(prev => [...prev, { id, name: newIngName, unit: newIngUnit, idealQty: Number(effectiveIdeal), currentQty: totalQty, suppliers: [{ name: supplierName, qtyPerBox, pricePerBox: effectivePricePerBox, unit: newIngUnit }], purchaseHistory: [purchaseRecord] }]);
+                                                                }
+                                                                setNewIngName(''); setNewIngIdeal(''); setNewIngSupplierName(''); setNewIngQtyPerBox(''); setNewIngBoxCount(''); setNewIngSelectedSupplier(''); setNewIngSupplierMode('new'); setNewIngEditingIdeal(false); setNewIngPricePerBox(''); setNewIngEditingPrice(false);
+                                                            }} className="bg-[#967D62] hover:bg-[#7A654E] text-white px-4">
+                                                                <Plus className="w-4 h-4" />
+                                                            </Button>
+                                                        </div>
                                                     </div>
                                                 );
                                             })()}
@@ -484,7 +415,7 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                                                             <div className="flex justify-between items-center mb-1">
                                                                 <span className={`font-semibold text-sm ${textColor}`}>{ing.name}</span>
                                                                 <div className="flex items-center gap-2">
-                                                                    <span className={`text-sm font-mono ${pct < 20 ? 'text-red-500' : pct < 50 ? 'text-amber-500' : 'text-emerald-500'}`}>{ing.currentQty}{ing.unit} / {ing.idealQty}{ing.unit}</span>
+                                                                    <span className={`text-sm font-mono ${pct < 20 ? 'text-red-500' : pct < 50 ? 'text-amber-500' : 'text-emerald-500'}`}>{floor2(ing.currentQty)}{ing.unit} / {floor2(ing.idealQty)}{ing.unit}</span>
                                                                     <button onClick={() => setIngredients(prev => prev.filter(i => i.id !== ing.id))} className="text-red-400 hover:text-red-500"><X className="w-3.5 h-3.5" /></button>
                                                                 </div>
                                                             </div>
@@ -498,33 +429,15 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                                                 {preparations.length > 0 && (
                                                     <>
                                                         <p className={`text-[10px] font-bold uppercase tracking-wider pt-1 ${mutedText}`}>Preparazioni</p>
-                                                        {preparations.map(prep => {
-                                                            const pct = prep.idealQty > 0 ? (prep.currentQty / prep.idealQty) * 100 : 100;
-                                                            const color = pct > 50 ? 'bg-emerald-500' : pct > 20 ? 'bg-amber-500' : 'bg-red-500';
-                                                            return (
-                                                                <div key={prep.id} className={`p-3 rounded-lg border ${isDinner ? 'bg-[#0F172A] border-[#334155]/60' : 'bg-[#967D62]/5 border-[#967D62]/20'}`}>
-                                                                    <div className="flex justify-between items-center mb-1">
-                                                                        <div className="flex items-center gap-1.5">
-                                                                            <CookingPot className={`w-3.5 h-3.5 text-[#967D62]`} />
-                                                                            <span className={`font-semibold text-sm ${textColor}`}>{prep.name}</span>
-                                                                        </div>
-                                                                        <div className="flex items-center gap-2">
-                                                                            {prep.idealQty > 0 ? (
-                                                                                <span className={`text-sm font-mono ${pct < 20 ? 'text-red-500' : pct < 50 ? 'text-amber-500' : 'text-emerald-500'}`}>{prep.currentQty}{prep.yieldUnit} / {prep.idealQty}{prep.yieldUnit}</span>
-                                                                            ) : (
-                                                                                <span className={`text-sm font-mono ${mutedText}`}>{prep.currentQty}{prep.yieldUnit}</span>
-                                                                            )}
-                                                                            <button onClick={() => setPlanTab('preparazioni')} className={`${mutedText} hover:text-[#967D62]`} title="Vai a Preparazioni"><CookingPot className="w-3.5 h-3.5" /></button>
-                                                                        </div>
-                                                                    </div>
-                                                                    {prep.idealQty > 0 && (
-                                                                        <div className={`w-full h-1.5 rounded-full ${isDinner ? 'bg-[#334155]' : 'bg-gray-200'}`}>
-                                                                            <div className={`h-1.5 rounded-full transition-all ${color}`} style={{ width: `${Math.min(100, pct)}%` }} />
-                                                                        </div>
-                                                                    )}
+                                                        {preparations.map(prep => (
+                                                            <div key={prep.id} className={`p-3 rounded-lg border ${isDinner ? 'bg-[#0F172A] border-[#334155]/60' : 'bg-[#967D62]/5 border-[#967D62]/20'}`}>
+                                                                <div className="flex items-center gap-1.5">
+                                                                    <CookingPot className={`w-3.5 h-3.5 text-[#967D62]`} />
+                                                                    <span className={`font-semibold text-sm ${textColor}`}>{prep.name}</span>
+                                                                    <span className={`ml-1 text-xs ${mutedText}`}>— {prep.yieldQty}{prep.yieldUnit}/batch</span>
                                                                 </div>
-                                                            );
-                                                        })}
+                                                            </div>
+                                                        ))}
                                                     </>
                                                 )}
                                             </div>
@@ -584,265 +497,42 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                                     </CardContent>
                                 </Card>
 
-                                {/* ===== COLONNA 2: RICETTE ===== */}
-                                <Card className={cardBg}>
-                                    <CardHeader>
-                                        <CardTitle className={`flex items-center gap-2 ${textColor}`}><BookOpen className={`w-5 h-5 ${accentColor}`} /> Quantità per Piatto</CardTitle>
-                                        <CardDescription className={mutedText}>Per ogni piatto, indica gli ingredienti usati e le quantità per porzione.</CardDescription>
-                                    </CardHeader>
-                                    <CardContent className="space-y-4">
-                                        {ingredients.length === 0 ? (
-                                            <p className={`text-sm text-center py-4 ${mutedText}`}>Aggiungi prima gli ingredienti nel Magazzino.</p>
-                                        ) : (
-                                            <div className="space-y-3 max-h-[520px] overflow-y-auto pr-1">
-                                                {MENU_CATEGORIES.flatMap(cat => cat.items).map(dish => {
-                                                    const dishRecipe = recipes[dish] || [];
-                                                    const isEditing = editingRecipeDish === dish;
-                                                    return (
-                                                        <div key={dish} className={`rounded-lg border overflow-hidden ${isDinner ? 'border-[#334155]' : 'border-[#EAE5DA]'}`}>
-                                                            <button onClick={() => setEditingRecipeDish(isEditing ? null : dish)} className={`w-full flex items-center justify-between px-4 py-2.5 text-sm font-semibold transition-colors ${isEditing ? (isDinner ? 'bg-[#334155] text-[#F4F1EA]' : 'bg-gray-100 text-[#2C2A28]') : (isDinner ? 'bg-[#1E293B] text-[#94A3B8] hover:bg-[#334155]' : 'bg-white text-[#8C8A85] hover:bg-gray-50')}`}>
-                                                                <span>{dish}</span>
-                                                                <span className="flex items-center gap-2">
-                                                                    {dishRecipe.length > 0 && <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isDinner ? 'bg-[#967D62]/20 text-[#967D62]' : 'bg-[#967D62]/10 text-[#967D62]'}`}>{dishRecipe.length} ing.</span>}
-                                                                    {isEditing ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                                                                </span>
-                                                            </button>
-                                                            {isEditing && (
-                                                                <div className={`p-3 space-y-2 ${isDinner ? 'bg-[#0F172A]' : 'bg-gray-50'}`}>
-                                                                    {/* ingredienti già aggiunti (incluse preparazioni con prefisso prep:) */}
-                                                                    {dishRecipe.map(({ ingredientId, qty, unit: rowUnit }) => {
-                                                                        const isPrep = ingredientId.startsWith('prep:');
-                                                                        const prepObj = isPrep ? preparations.find(p => p.id === ingredientId.replace('prep:', '')) : null;
-                                                                        const ing = !isPrep ? ingredients.find(i => i.id === ingredientId) : null;
-                                                                        const displayName = isPrep ? prepObj?.name : ing?.name;
-                                                                        const displayUnit = rowUnit ?? (isPrep ? prepObj?.yieldUnit : ing?.unit);
-                                                                        if (!displayName) return null;
-                                                                        return (
-                                                                            <div key={ingredientId} className="flex items-center justify-between text-xs">
-                                                                                <span className={textColor}>
-                                                                                    {displayName}
-                                                                                    {isPrep && <span className={`ml-1 text-[10px] text-[#967D62]`}>(prep.)</span>}
-                                                                                </span>
-                                                                                <div className="flex items-center gap-2">
-                                                                                    <span className={mutedText}>{qty}{displayUnit}</span>
-                                                                                    <button onClick={() => setRecipes(prev => ({ ...prev, [dish]: (prev[dish] || []).filter(r => r.ingredientId !== ingredientId) }))} className="text-red-400 hover:text-red-500"><X className="w-3 h-3" /></button>
-                                                                                </div>
-                                                                            </div>
-                                                                        );
-                                                                    })}
-                                                                    {/* form aggiunta ingrediente a ricetta */}
-                                                                    <div className="flex gap-2 pt-1">
-                                                                        <div className="flex-1 relative">
-                                                                            <Input
-                                                                                placeholder="Cerca ingrediente o preparazione..."
-                                                                                value={editingRecipeIngId
-                                                                                    ? (editingRecipeIngId.startsWith('prep:')
-                                                                                        ? (preparations.find(p => p.id === editingRecipeIngId.replace('prep:', ''))?.name ?? ingredientSearchText)
-                                                                                        : (ingredients.find(i => i.id === editingRecipeIngId)?.name ?? ingredientSearchText))
-                                                                                    : ingredientSearchText}
-                                                                                onChange={e => {
-                                                                                    setIngredientSearchText(e.target.value);
-                                                                                    setEditingRecipeIngId('');
-                                                                                }}
-                                                                                onFocus={e => setDropdownRect(e.currentTarget.getBoundingClientRect())}
-                                                                                onBlur={() => setTimeout(() => setDropdownRect(null), 150)}
-                                                                                className={`text-xs ${isDinner ? 'border-[#334155] bg-[#1E293B] text-[#F4F1EA]' : 'border-[#EAE5DA] bg-white text-[#2C2A28]'}`}
-                                                                            />
-                                                                            {dropdownRect && !editingRecipeIngId && ingredientSearchText && (() => {
-                                                                                const filteredIngs = ingredients.filter(i => !recipes[dish]?.some(r => r.ingredientId === i.id) && i.name.toLowerCase().includes(ingredientSearchText.toLowerCase()));
-                                                                                // Preparazioni come ingredienti virtuali (prefisso "prep:")
-                                                                                const filteredPreps = preparations.filter(p => !recipes[dish]?.some(r => r.ingredientId === 'prep:' + p.id) && p.name.toLowerCase().includes(ingredientSearchText.toLowerCase()));
-                                                                                if (filteredIngs.length === 0 && filteredPreps.length === 0) return null;
-                                                                                return (
-                                                                                    <div
-                                                                                        className={`fixed z-[9999] rounded-lg border shadow-xl overflow-y-auto ${isDinner ? 'bg-[#1E293B] border-[#334155]' : 'bg-white border-[#EAE5DA]'}`}
-                                                                                        style={{ top: dropdownRect.bottom + 4, left: dropdownRect.left, width: dropdownRect.width, maxHeight: 200 }}
-                                                                                    >
-                                                                                        {filteredPreps.length > 0 && <div className={`px-3 py-1 text-[10px] font-bold uppercase tracking-wider ${mutedText} border-b ${isDinner ? 'border-[#334155]' : 'border-[#EAE5DA]'}`}>Preparazioni</div>}
-                                                                                        {filteredPreps.map(p => (
-                                                                                            <button
-                                                                                                key={'prep:'+p.id}
-                                                                                                onMouseDown={e => { e.preventDefault(); setEditingRecipeIngId('prep:' + p.id); setIngredientSearchText(''); setDropdownRect(null); }}
-                                                                                                className={`w-full text-left px-3 py-2 text-xs font-medium transition-colors ${isDinner ? 'text-[#F4F1EA] hover:bg-[#334155]' : 'text-[#2C2A28] hover:bg-gray-50'}`}
-                                                                                            >
-                                                                                                {p.name} <span className={`text-[#967D62]`}>({p.yieldUnit}) — prep.</span>
-                                                                                            </button>
-                                                                                        ))}
-                                                                                        {filteredIngs.length > 0 && <div className={`px-3 py-1 text-[10px] font-bold uppercase tracking-wider ${mutedText} border-b ${isDinner ? 'border-[#334155]' : 'border-[#EAE5DA]'}`}>Ingredienti</div>}
-                                                                                        {filteredIngs.map(i => (
-                                                                                            <button
-                                                                                                key={i.id}
-                                                                                                onMouseDown={e => { e.preventDefault(); setEditingRecipeIngId(i.id); setIngredientSearchText(''); setDropdownRect(null); }}
-                                                                                                className={`w-full text-left px-3 py-2 text-xs font-medium transition-colors ${isDinner ? 'text-[#F4F1EA] hover:bg-[#334155]' : 'text-[#2C2A28] hover:bg-gray-50'}`}
-                                                                                            >
-                                                                                                {i.name} <span className={mutedText}>({i.unit})</span>
-                                                                                            </button>
-                                                                                        ))}
-                                                                                    </div>
-                                                                                );
-                                                                            })()}
-                                                                        </div>
-                                                                        {(() => {
-                                                                            const isPrep = editingRecipeIngId && editingRecipeIngId.startsWith('prep:');
-                                                                            const selIng = editingRecipeIngId && !isPrep
-                                                                                ? ingredients.find(i => i.id === editingRecipeIngId)
-                                                                                : null;
-                                                                            const selPrep = isPrep ? preparations.find(p => p.id === editingRecipeIngId.replace('prep:', '')) : null;
-                                                                            const baseUnit = selIng?.unit ?? selPrep?.yieldUnit ?? '';
-                                                                            const compatUnits = baseUnit ? getCompatibleUnits(baseUnit) : [];
-                                                                            const isPz = baseUnit === 'pz';
-                                                                            return (
-                                                                                <div className="flex flex-col gap-1">
-                                                                                    <div className="flex gap-1 items-center">
-                                                                                        <Input
-                                                                                            type="number"
-                                                                                            placeholder="Qty"
-                                                                                            value={editingRecipeQty}
-                                                                                            onChange={e => setEditingRecipeQty(e.target.value)}
-                                                                                            className={`w-16 text-xs ${isDinner ? 'border-[#334155] bg-[#1E293B]' : 'border-[#EAE5DA]'}`}
-                                                                                        />
-                                                                                        {compatUnits.length > 1 ? (
-                                                                                            <select
-                                                                                                value={editingRecipePcsYield || baseUnit}
-                                                                                                onChange={e => setEditingRecipePcsYield(e.target.value)}
-                                                                                                className={`w-14 rounded-md border text-xs px-1 h-8 ${isDinner ? 'border-[#334155] bg-[#1E293B] text-[#F4F1EA]' : 'border-[#EAE5DA] bg-white text-[#2C2A28]'}`}
-                                                                                            >
-                                                                                                {compatUnits.map(u => <option key={u} value={u}>{u}</option>)}
-                                                                                            </select>
-                                                                                        ) : (
-                                                                                            <span className={`text-xs w-8 ${mutedText}`}>{baseUnit}</span>
-                                                                                        )}
-                                                                                    </div>
-                                                                                    {isPz && (
-                                                                                        <div className="flex items-center gap-1">
-                                                                                            <span className={`text-[10px] whitespace-nowrap ${mutedText}`}>1pz =</span>
-                                                                                            <Input
-                                                                                                type="number"
-                                                                                                placeholder="N porzioni"
-                                                                                                value={''}
-                                                                                                onChange={e => {/* pcs_yield field repurposed for unit select above; handle separately if needed */}}
-                                                                                                className={`w-16 text-xs ${isDinner ? 'border-[#334155] bg-[#1E293B]' : 'border-[#EAE5DA]'}`}
-                                                                                            />
-                                                                                        </div>
-                                                                                    )}
-                                                                                </div>
-                                                                            );
-                                                                        })()}
-                                                                        <button onClick={() => {
-                                                                            const isPrep = editingRecipeIngId.startsWith('prep:');
-                                                                            const prepObj = isPrep ? preparations.find(p => p.id === editingRecipeIngId.replace('prep:', '')) : null;
-                                                                            const ingObj = !isPrep ? ingredients.find(i => i.id === editingRecipeIngId) : null;
-                                                                            const validId = isPrep ? (prepObj ? editingRecipeIngId : null) : ingObj?.id;
-                                                                            if (!validId || !editingRecipeQty) return;
-                                                                            const baseUnit = ingObj?.unit ?? prepObj?.yieldUnit ?? '';
-                                                                            const selectedUnit = editingRecipePcsYield || baseUnit;
-                                                                            // Salva qty e unit così come inseriti — la normalizzazione avviene solo nei calcoli
-                                                                            setRecipes(prev => ({ ...prev, [dish]: [...(prev[dish] || []), { ingredientId: validId, qty: Number(editingRecipeQty), unit: selectedUnit }] }));
-                                                                            setEditingRecipeIngId(''); setEditingRecipeQty(''); setEditingRecipePcsYield(''); setIngredientSearchText('');
-                                                                        }} className="px-2 py-1 rounded-md bg-[#967D62] text-white text-xs font-bold hover:bg-[#7A654E] self-end">
-                                                                            <Plus className="w-3 h-3" />
-                                                                        </button>
-                                                                    </div>
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                        )}
-                                    </CardContent>
-                                </Card>
-                            </div>
-                        </div>
-                    )}
-
-                    {planTab === 'preparazioni' && (
-                        <div className="space-y-6">
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-                                {/* ===== COLONNA 1: CREA/MODIFICA PREPARAZIONE ===== */}
+                                {/* ===== COLONNA 2: PREPARAZIONI ===== */}
                                 <Card className={cardBg}>
                                     <CardHeader>
                                         <CardTitle className={`flex items-center gap-2 ${textColor}`}><CookingPot className={`w-5 h-5 ${accentColor}`} /> Preparazioni Interne</CardTitle>
-                                        <CardDescription className={mutedText}>Semi-lavorati fatti in casa. Inserisci la ricetta della preparazione e registra i batch prodotti per scalare gli ingredienti base dal magazzino.</CardDescription>
+                                        <CardDescription className={mutedText}>Semi-lavorati fatti in casa. Definisci la ricetta e usala come ingrediente nei piatti.</CardDescription>
                                     </CardHeader>
                                     <CardContent className="space-y-4">
                                         {/* Form nuova preparazione */}
                                         <div className={`p-4 rounded-xl border space-y-3 ${isDinner ? 'bg-[#0F172A] border-[#334155]' : 'bg-gray-50 border-[#EAE5DA]'}`}>
                                             <h4 className={`text-xs font-bold uppercase tracking-wider ${mutedText}`}>{editingPrepId ? 'Modifica Preparazione' : 'Nuova Preparazione'}</h4>
                                             <div className="flex gap-2">
-                                                <Input
-                                                    placeholder="Nome (es. Maionese, Salsa BBQ)"
-                                                    value={newPrepName}
-                                                    onChange={e => setNewPrepName(e.target.value)}
-                                                    className={`flex-1 ${isDinner ? 'border-[#334155] bg-[#1E293B]' : 'border-[#EAE5DA]'}`}
-                                                />
+                                                <Input placeholder="Nome (es. Maionese, Salsa BBQ)" value={newPrepName} onChange={e => setNewPrepName(e.target.value)} className={`flex-1 ${isDinner ? 'border-[#334155] bg-[#1E293B]' : 'border-[#EAE5DA]'}`} />
                                             </div>
                                             <div className="flex gap-2 items-end">
                                                 <div className="flex-1 space-y-1">
                                                     <Label className={`text-xs ${mutedText}`}>Resa (quantità prodotta per batch)</Label>
-                                                    <Input
-                                                        type="number"
-                                                        placeholder="Es. 500"
-                                                        value={newPrepYieldQty}
-                                                        onChange={e => setNewPrepYieldQty(e.target.value)}
-                                                        className={isDinner ? 'border-[#334155] bg-[#1E293B]' : 'border-[#EAE5DA]'}
-                                                    />
+                                                    <Input type="number" placeholder="Es. 500" value={newPrepYieldQty} onChange={e => setNewPrepYieldQty(e.target.value)} className={isDinner ? 'border-[#334155] bg-[#1E293B]' : 'border-[#EAE5DA]'} />
                                                 </div>
-                                                <select
-                                                    value={newPrepYieldUnit}
-                                                    onChange={e => setNewPrepYieldUnit(e.target.value)}
-                                                    className={`w-20 rounded-md border text-sm px-2 h-9 ${isDinner ? 'border-[#334155] bg-[#1E293B] text-[#F4F1EA]' : 'border-[#EAE5DA] bg-white text-[#2C2A28]'}`}
-                                                >
+                                                <select value={newPrepYieldUnit} onChange={e => setNewPrepYieldUnit(e.target.value)} className={`w-20 rounded-md border text-sm px-2 h-9 ${isDinner ? 'border-[#334155] bg-[#1E293B] text-[#F4F1EA]' : 'border-[#EAE5DA] bg-white text-[#2C2A28]'}`}>
                                                     {['g', 'kg', 'ml', 'l', 'pz', 'cl'].map(u => <option key={u} value={u}>{u}</option>)}
                                                 </select>
                                             </div>
-                                            {/* Quantità ideale in magazzino */}
-                                            <div className="space-y-1">
-                                                <Label className={`text-xs ${mutedText}`}>Quantità ideale in magazzino ({newPrepYieldUnit})</Label>
-                                                {(() => {
-                                                    const existingPrep = editingPrepId ? preparations.find(pr => pr.id === editingPrepId) : null;
-                                                    const hasIdeal = existingPrep && existingPrep.idealQty > 0;
-                                                    if (hasIdeal && !newPrepEditingIdeal) {
-                                                        return (
-                                                            <div className={`flex items-center gap-2 h-9 px-3 rounded-md border ${isDinner ? 'border-[#334155] bg-[#1E293B]' : 'border-[#EAE5DA] bg-gray-100'}`}>
-                                                                <span className={`flex-1 text-sm ${mutedText}`}>{existingPrep.idealQty}{existingPrep.yieldUnit}</span>
-                                                                <button onClick={() => { setNewPrepEditingIdeal(true); setNewPrepIdealQty(String(existingPrep.idealQty)); }} className={`${mutedText} hover:text-[#967D62] transition-colors`}><Pencil className="w-3.5 h-3.5" /></button>
-                                                            </div>
-                                                        );
-                                                    }
-                                                    return <Input type="number" placeholder="Es. 1000" value={newPrepIdealQty} onChange={e => setNewPrepIdealQty(e.target.value)} className={isDinner ? 'border-[#334155] bg-[#1E293B]' : 'border-[#EAE5DA]'} />;
-                                                })()}
-                                            </div>
-                                            <Button
-                                                onClick={() => {
-                                                    if (!newPrepName || !newPrepYieldQty) return;
-                                                    const idealVal = newPrepEditingIdeal && newPrepIdealQty ? Number(newPrepIdealQty) : (newPrepIdealQty ? Number(newPrepIdealQty) : 0);
-                                                    if (editingPrepId) {
-                                                        setPreparations(prev => prev.map(p => p.id === editingPrepId
-                                                            ? { ...p, name: newPrepName, yieldQty: Number(newPrepYieldQty), yieldUnit: newPrepYieldUnit, ...(idealVal > 0 ? { idealQty: idealVal } : {}) }
-                                                            : p));
-                                                        setEditingPrepId(null);
-                                                    } else {
-                                                        setPreparations(prev => [...prev, {
-                                                            id: Date.now().toString(),
-                                                            name: newPrepName,
-                                                            yieldQty: Number(newPrepYieldQty),
-                                                            yieldUnit: newPrepYieldUnit,
-                                                            currentQty: 0,
-                                                            idealQty: idealVal,
-                                                            ingredients: []
-                                                        }]);
-                                                    }
-                                                    setNewPrepName(''); setNewPrepYieldQty(''); setNewPrepIdealQty(''); setNewPrepEditingIdeal(false);
-                                                }}
-                                                className="w-full bg-[#967D62] hover:bg-[#7A654E] text-white"
-                                            >
+                                            <Button onClick={() => {
+                                                if (!newPrepName || !newPrepYieldQty) return;
+                                                if (editingPrepId) {
+                                                    setPreparations(prev => prev.map(p => p.id === editingPrepId ? { ...p, name: newPrepName, yieldQty: Number(newPrepYieldQty), yieldUnit: newPrepYieldUnit } : p));
+                                                    setEditingPrepId(null);
+                                                } else {
+                                                    setPreparations(prev => [...prev, { id: Date.now().toString(), name: newPrepName, yieldQty: Number(newPrepYieldQty), yieldUnit: newPrepYieldUnit, currentQty: 0, idealQty: 0, ingredients: [] }]);
+                                                }
+                                                setNewPrepName(''); setNewPrepYieldQty(''); setNewPrepIdealQty(''); setNewPrepEditingIdeal(false);
+                                            }} className="w-full bg-[#967D62] hover:bg-[#7A654E] text-white">
                                                 <Plus className="w-4 h-4 mr-2" />
                                                 {editingPrepId ? 'Aggiorna' : 'Crea Preparazione'}
                                             </Button>
                                         </div>
-
                                         {/* Lista preparazioni */}
                                         {preparations.length === 0 ? (
                                             <p className={`text-sm text-center py-4 ${mutedText}`}>Nessuna preparazione inserita.</p>
@@ -855,7 +545,6 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                                                         prep.ingredients.forEach(row => {
                                                             const ing = ingredients.find(i => i.id === row.ingredientId);
                                                             if (!ing) { missing = true; return; }
-                                                            // WAC: manuale > storico ponderato > primo fornitore
                                                             let ppu: number | null = null;
                                                             if (ing.manualPricePerUnit != null && ing.manualPricePerUnit > 0) {
                                                                 ppu = ing.manualPricePerUnit;
@@ -868,7 +557,6 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                                                                 if (sup) ppu = sup.pricePerBox / sup.qtyPerBox;
                                                             }
                                                             if (ppu == null) { missing = true; return; }
-                                                            // row.qty può essere in un sottomultiplo (es. g invece di kg) — normalizza a baseUnit per il calcolo costo
                                                             const qtyInBase = normalizeToBase(row.qty, row.unit ?? ing.unit, ing.unit);
                                                             total += ppu * qtyInBase;
                                                         });
@@ -876,18 +564,28 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                                                     })();
                                                     return (
                                                         <div key={prep.id} className={`rounded-xl border overflow-hidden ${isDinner ? 'border-[#334155]' : 'border-[#EAE5DA]'}`}>
-                                                            <div className={`flex items-center justify-between p-3 ${isDinner ? 'bg-[#1E293B]' : 'bg-white'}`}>
-                                                                <div>
+                                                            {/* Header: sempre visibile, click per aprire/chiudere */}
+                                                            <button
+                                                                onClick={() => setOpenPrepIds(prev => {
+                                                                    const next = new Set(prev);
+                                                                    if (next.has(prep.id)) { next.delete(prep.id); } else { next.add(prep.id); }
+                                                                    return next;
+                                                                })}
+                                                                className={`w-full flex items-center justify-between p-3 text-left transition-colors ${isDinner ? 'bg-[#1E293B] hover:bg-[#334155]' : 'bg-white hover:bg-gray-50'}`}
+                                                            >
+                                                                <div className="flex items-center gap-2 min-w-0">
                                                                     <span className={`font-semibold text-sm ${textColor}`}>{prep.name}</span>
-                                                                    <span className={`ml-2 text-xs ${mutedText}`}>Resa: {prep.yieldQty}{prep.yieldUnit}</span>
-                                                                    {costPerUnit != null && <span className={`ml-2 text-xs font-mono text-[#967D62]`}>€{costPerUnit.toFixed(4)}/{prep.yieldUnit}</span>}
+                                                                    <span className={`text-xs ${mutedText}`}>Resa: {prep.yieldQty}{prep.yieldUnit}</span>
+                                                                    {costPerUnit != null && <span className={`text-xs font-mono text-[#967D62]`}>€{costPerUnit.toFixed(4)}/{prep.yieldUnit}</span>}
                                                                 </div>
-                                                                <div className="flex items-center gap-2">
-                                                                    <button onClick={() => { setEditingPrepId(prep.id); setNewPrepName(prep.name); setNewPrepYieldQty(String(prep.yieldQty)); setNewPrepYieldUnit(prep.yieldUnit); }} className={`${mutedText} hover:text-[#967D62]`}><Pencil className="w-3.5 h-3.5" /></button>
-                                                                    <button onClick={() => setPreparations(prev => prev.filter(p => p.id !== prep.id))} className="text-red-400 hover:text-red-500"><X className="w-3.5 h-3.5" /></button>
+                                                                <div className="flex items-center gap-2 shrink-0 ml-2">
+                                                                    <button onClick={e => { e.stopPropagation(); setEditingPrepId(prep.id); setNewPrepName(prep.name); setNewPrepYieldQty(String(prep.yieldQty)); setNewPrepYieldUnit(prep.yieldUnit); setNewPrepIdealQty(''); setNewPrepEditingIdeal(false); }} className={`${mutedText} hover:text-[#967D62]`}><Pencil className="w-3.5 h-3.5" /></button>
+                                                                    <button onClick={e => { e.stopPropagation(); setPreparations(prev => prev.filter(p => p.id !== prep.id)); }} className="text-red-400 hover:text-red-500"><X className="w-3.5 h-3.5" /></button>
+                                                                    {openPrepIds.has(prep.id) ? <ChevronUp className={`w-4 h-4 ${mutedText}`} /> : <ChevronDown className={`w-4 h-4 ${mutedText}`} />}
                                                                 </div>
-                                                            </div>
-                                                            {/* Ingredienti della preparazione */}
+                                                            </button>
+                                                            {/* Corpo collassabile */}
+                                                            {openPrepIds.has(prep.id) && (
                                                             <div className={`p-3 space-y-2 ${isDinner ? 'bg-[#0F172A]' : 'bg-gray-50'}`}>
                                                                 {prep.ingredients.map(row => {
                                                                     const ing = ingredients.find(i => i.id === row.ingredientId);
@@ -901,58 +599,37 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                                                                         </div>
                                                                     ) : null;
                                                                 })}
-                                                                {/* Aggiungi ingrediente alla prep */}
                                                                 <div className="flex gap-2 pt-1">
                                                                     <div className="flex-1 relative">
                                                                         <Input
                                                                             placeholder="Cerca ingrediente..."
-                                                                            value={prepIngId && ingredients.find(i => i.id === prepIngId) ? ingredients.find(i => i.id === prepIngId)!.name : (editingPrepId === prep.id ? prepIngSearch : '')}
+                                                                            value={prepIngId && ingredients.find(i => i.id === prepIngId) ? ingredients.find(i => i.id === prepIngId)!.name : (activePrepIngDropdownId === prep.id ? prepIngSearch : '')}
                                                                             onChange={e => { setPrepIngSearch(e.target.value); setPrepIngId(''); }}
-                                                                            onFocus={e => { setEditingPrepId(prep.id); setPrepDropdownRect(e.currentTarget.getBoundingClientRect()); }}
-                                                                            onBlur={() => setTimeout(() => setPrepDropdownRect(null), 150)}
+                                                                            onFocus={e => { setActivePrepIngDropdownId(prep.id); setPrepDropdownRect(e.currentTarget.getBoundingClientRect()); }}
+                                                                            onBlur={() => setTimeout(() => { setPrepDropdownRect(null); }, 150)}
                                                                             className={`text-xs ${isDinner ? 'border-[#334155] bg-[#1E293B] text-[#F4F1EA]' : 'border-[#EAE5DA] bg-white'}`}
                                                                         />
-                                                                        {prepDropdownRect && editingPrepId === prep.id && !prepIngId && prepIngSearch && (
-                                                                            <div
-                                                                                className={`fixed z-[9999] rounded-lg border shadow-xl overflow-y-auto ${isDinner ? 'bg-[#1E293B] border-[#334155]' : 'bg-white border-[#EAE5DA]'}`}
-                                                                                style={{ top: prepDropdownRect.bottom + 4, left: prepDropdownRect.left, width: prepDropdownRect.width, maxHeight: 180 }}
-                                                                            >
+                                                                        {prepDropdownRect && activePrepIngDropdownId === prep.id && !prepIngId && prepIngSearch && (
+                                                                            <div className={`fixed z-[9999] rounded-lg border shadow-xl overflow-y-auto ${isDinner ? 'bg-[#1E293B] border-[#334155]' : 'bg-white border-[#EAE5DA]'}`} style={{ top: prepDropdownRect.bottom + 4, left: prepDropdownRect.left, width: prepDropdownRect.width, maxHeight: 180 }}>
                                                                                 {ingredients.filter(i => !prep.ingredients.some(r => r.ingredientId === i.id) && i.name.toLowerCase().includes(prepIngSearch.toLowerCase())).map(i => (
-                                                                                    <button
-                                                                                        key={i.id}
-                                                                                        onMouseDown={e => { e.preventDefault(); setPrepIngId(i.id); setPrepIngSearch(''); setPrepDropdownRect(null); }}
-                                                                                        className={`w-full text-left px-3 py-2 text-xs font-medium transition-colors ${isDinner ? 'text-[#F4F1EA] hover:bg-[#334155]' : 'text-[#2C2A28] hover:bg-gray-50'}`}
-                                                                                    >
+                                                                                    <button key={i.id} onMouseDown={e => { e.preventDefault(); setPrepIngId(i.id); setPrepIngSearch(''); setPrepDropdownRect(null); }} className={`w-full text-left px-3 py-2 text-xs font-medium transition-colors ${isDinner ? 'text-[#F4F1EA] hover:bg-[#334155]' : 'text-[#2C2A28] hover:bg-gray-50'}`}>
                                                                                         {i.name} <span className={mutedText}>({i.unit})</span>
                                                                                     </button>
                                                                                 ))}
                                                                             </div>
                                                                         )}
                                                                     </div>
-                                                                    {/* Qty + UdM compatibile */}
                                                                     {(() => {
                                                                         const selIng = prepIngId ? ingredients.find(i => i.id === prepIngId) : null;
                                                                         const baseUnit = selIng?.unit ?? '';
                                                                         const compatUnits = baseUnit ? getCompatibleUnits(baseUnit) : [];
-                                                                        // prepIngQty riusa il campo esistente; per l'udm usiamo un local state trick:
-                                                                        // salviamo udm scelta come suffisso separato da "|" in prepIngQty (es "200|g")
-                                                                        const [qtyPart, unitPart] = (editingPrepId === prep.id ? prepIngQty : '').split('|');
+                                                                        const [qtyPart, unitPart] = (activePrepIngDropdownId === prep.id ? prepIngQty : '').split('|');
                                                                         const currentUnit = unitPart || baseUnit;
                                                                         return (
                                                                             <div className="flex gap-1 items-center">
-                                                                                <Input
-                                                                                    type="number"
-                                                                                    placeholder="Qty"
-                                                                                    value={qtyPart || ''}
-                                                                                    onChange={e => setPrepIngQty(`${e.target.value}|${currentUnit || baseUnit}`)}
-                                                                                    className={`w-16 text-xs ${isDinner ? 'border-[#334155] bg-[#1E293B]' : 'border-[#EAE5DA]'}`}
-                                                                                />
+                                                                                <Input type="number" placeholder="Qty" value={qtyPart || ''} onChange={e => setPrepIngQty(`${e.target.value}|${currentUnit || baseUnit}`)} className={`w-16 text-xs ${isDinner ? 'border-[#334155] bg-[#1E293B]' : 'border-[#EAE5DA]'}`} />
                                                                                 {compatUnits.length > 1 ? (
-                                                                                    <select
-                                                                                        value={currentUnit}
-                                                                                        onChange={e => setPrepIngQty(`${qtyPart || ''}|${e.target.value}`)}
-                                                                                        className={`w-14 rounded-md border text-xs px-1 h-8 ${isDinner ? 'border-[#334155] bg-[#1E293B] text-[#F4F1EA]' : 'border-[#EAE5DA] bg-white text-[#2C2A28]'}`}
-                                                                                    >
+                                                                                    <select value={currentUnit} onChange={e => setPrepIngQty(`${qtyPart || ''}|${e.target.value}`)} className={`w-14 rounded-md border text-xs px-1 h-8 ${isDinner ? 'border-[#334155] bg-[#1E293B] text-[#F4F1EA]' : 'border-[#EAE5DA] bg-white text-[#2C2A28]'}`}>
                                                                                         {compatUnits.map(u => <option key={u} value={u}>{u}</option>)}
                                                                                     </select>
                                                                                 ) : (
@@ -963,22 +640,20 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                                                                     })()}
                                                                     <button onClick={() => {
                                                                         const validId = ingredients.find(i => i.id === prepIngId)?.id;
-                                                                        const rawQtyStr = editingPrepId === prep.id ? prepIngQty : '';
+                                                                        const rawQtyStr = activePrepIngDropdownId === prep.id ? prepIngQty : '';
                                                                         const [qtyPart, unitPart] = rawQtyStr.split('|');
                                                                         if (!validId || !qtyPart) return;
                                                                         const selIng = ingredients.find(i => i.id === prepIngId);
                                                                         const baseUnit = selIng?.unit ?? '';
                                                                         const selectedUnit = unitPart || baseUnit;
-                                                                        // Salva qty e unit così come inseriti — la normalizzazione avviene solo nei calcoli
-                                                                        setPreparations(prev => prev.map(p => p.id === prep.id
-                                                                            ? { ...p, ingredients: [...p.ingredients, { ingredientId: validId, qty: Number(qtyPart), unit: selectedUnit }] }
-                                                                            : p));
-                                                                        setPrepIngId(''); setPrepIngQty(''); setPrepIngSearch('');
+                                                                        setPreparations(prev => prev.map(p => p.id === prep.id ? { ...p, ingredients: [...p.ingredients, { ingredientId: validId, qty: Number(qtyPart), unit: selectedUnit }] } : p));
+                                                                        setPrepIngId(''); setPrepIngQty(''); setPrepIngSearch(''); setActivePrepIngDropdownId(null);
                                                                     }} className="px-2 py-1 rounded-md bg-[#967D62] text-white text-xs font-bold hover:bg-[#7A654E]">
                                                                         <Plus className="w-3 h-3" />
                                                                     </button>
                                                                 </div>
                                                             </div>
+                                                            )}
                                                         </div>
                                                     );
                                                 })}
@@ -987,97 +662,136 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                                     </CardContent>
                                 </Card>
 
-                                {/* ===== COLONNA 2: REGISTRA BATCH PRODOTTO ===== */}
-                                <Card className={cardBg}>
-                                    <CardHeader>
-                                        <CardTitle className={`flex items-center gap-2 ${textColor}`}><Boxes className={`w-5 h-5 ${accentColor}`} /> Registra Produzione</CardTitle>
-                                        <CardDescription className={mutedText}>Quando produci un batch di una preparazione, registralo qui. Gli ingredienti base vengono scalati automaticamente dal magazzino.</CardDescription>
-                                    </CardHeader>
-                                    <CardContent className="space-y-4">
-                                        {preparations.length === 0 ? (
-                                            <p className={`text-sm text-center py-8 ${mutedText}`}>Crea prima una preparazione nella colonna sinistra.</p>
-                                        ) : (
-                                            <div className="space-y-3">
-                                                {preparations.map(prep => (
-                                                    <div key={prep.id} className={`p-4 rounded-xl border ${isDinner ? 'bg-[#0F172A] border-[#334155]' : 'bg-gray-50 border-[#EAE5DA]'}`}>
-                                                        <div className="flex items-center justify-between mb-3">
-                                                            <div>
-                                                                <span className={`font-semibold text-sm ${textColor}`}>{prep.name}</span>
-                                                                <span className={`ml-2 text-xs ${mutedText}`}>1 batch = {prep.yieldQty}{prep.yieldUnit}</span>
-                                                            </div>
-                                                        </div>
-                                                        <div className="flex gap-2 items-end">
-                                                            <div className="flex-1 space-y-1">
-                                                                <Label className={`text-xs ${mutedText}`}>Quantità prodotta ({prep.yieldUnit})</Label>
-                                                                <Input
-                                                                    type="number"
-                                                                    placeholder={`Es. ${prep.yieldQty}`}
-                                                                    value={prepBatchQty[prep.id] || ''}
-                                                                    onChange={e => setPrepBatchQty(prev => ({ ...prev, [prep.id]: e.target.value }))}
-                                                                    className={isDinner ? 'border-[#334155] bg-[#1E293B]' : 'border-[#EAE5DA]'}
-                                                                />
-                                                            </div>
-                                                            <Button
-                                                                onClick={() => {
-                                                                    const batchQty = Number(prepBatchQty[prep.id]);
-                                                                    if (!batchQty || batchQty <= 0 || prep.yieldQty <= 0) return;
-                                                                    const ratio = batchQty / prep.yieldQty;
-                                                                    // Scala gli ingredienti base
-                                                                    setIngredients(prev => {
-                                                                        const updated = [...prev];
-                                                                        prep.ingredients.forEach(row => {
-                                                                            const idx = updated.findIndex(i => i.id === row.ingredientId);
-                                                                            if (idx !== -1) {
-                                                                                // row.qty può essere in un sottomultiplo — normalizza a baseUnit del magazzino
-                                                                                const qtyInBase = normalizeToBase(row.qty, row.unit ?? updated[idx].unit, updated[idx].unit);
-                                                                                updated[idx] = { ...updated[idx], currentQty: Math.max(0, updated[idx].currentQty - qtyInBase * ratio) };
-                                                                            }
-                                                                        });
-                                                                        return updated;
-                                                                    });
-                                                                    setPrepBatchQty(prev => ({ ...prev, [prep.id]: '' }));
-                                                                }}
-                                                                className="bg-[#967D62] hover:bg-[#7A654E] text-white px-4 shrink-0"
-                                                            >
-                                                                <Check className="w-4 h-4 mr-1" /> Registra
-                                                            </Button>
-                                                        </div>
-                                                        {/* Anteprima ingredienti scalati */}
-                                                        {prepBatchQty[prep.id] && Number(prepBatchQty[prep.id]) > 0 && prep.yieldQty > 0 && (
-                                                            <div className={`mt-3 p-2 rounded-lg text-xs space-y-1 ${isDinner ? 'bg-[#1E293B]' : 'bg-white'}`}>
-                                                                <p className={`font-semibold ${mutedText} mb-1`}>Verrà scalato dal magazzino:</p>
-                                                                {prep.ingredients.map(row => {
-                                                                    const ing = ingredients.find(i => i.id === row.ingredientId);
-                                                                    if (!ing) return null;
-                                                                    const scaled = row.qty * (Number(prepBatchQty[prep.id]) / prep.yieldQty);
-                                                                    const displayUnit = row.unit ?? ing.unit;
+                            </div>
+                        </div>
+                    )}
+
+                    {planTab === 'ricette' && (
+                        <div className="space-y-6">
+                            <Card className={cardBg}>
+                                <CardHeader>
+                                    <CardTitle className={`flex items-center gap-2 ${textColor}`}><BookOpen className={`w-5 h-5 ${accentColor}`} /> Ricette dei Piatti</CardTitle>
+                                    <CardDescription className={mutedText}>Per ogni piatto del menu, indica gli ingredienti e le preparazioni usate con le quantità per porzione.</CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    {ingredients.length === 0 ? (
+                                        <p className={`text-sm text-center py-4 ${mutedText}`}>Aggiungi prima gli ingredienti nel Magazzino.</p>
+                                    ) : (
+                                        <div className="space-y-3">
+                                            {MENU_CATEGORIES.flatMap(cat => cat.items).map(dish => {
+                                                const dishRecipe = recipes[dish] || [];
+                                                const isEditing = editingRecipeDish === dish;
+                                                return (
+                                                    <div key={dish} className={`rounded-lg border overflow-hidden ${isDinner ? 'border-[#334155]' : 'border-[#EAE5DA]'}`}>
+                                                        <button onClick={() => setEditingRecipeDish(isEditing ? null : dish)} className={`w-full flex items-center justify-between px-4 py-2.5 text-sm font-semibold transition-colors ${isEditing ? (isDinner ? 'bg-[#334155] text-[#F4F1EA]' : 'bg-gray-100 text-[#2C2A28]') : (isDinner ? 'bg-[#1E293B] text-[#94A3B8] hover:bg-[#334155]' : 'bg-white text-[#8C8A85] hover:bg-gray-50')}`}>
+                                                            <span>{dish}</span>
+                                                            <span className="flex items-center gap-2">
+                                                                {dishRecipe.length > 0 && <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isDinner ? 'bg-[#967D62]/20 text-[#967D62]' : 'bg-[#967D62]/10 text-[#967D62]'}`}>{dishRecipe.length} ing.</span>}
+                                                                {isEditing ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                                                            </span>
+                                                        </button>
+                                                        {isEditing && (
+                                                            <div className={`p-3 space-y-2 ${isDinner ? 'bg-[#0F172A]' : 'bg-gray-50'}`}>
+                                                                {dishRecipe.map(({ ingredientId, qty, unit: rowUnit }) => {
+                                                                    const isPrep = ingredientId.startsWith('prep:');
+                                                                    const prepObj = isPrep ? preparations.find(p => p.id === ingredientId.replace('prep:', '')) : null;
+                                                                    const ing = !isPrep ? ingredients.find(i => i.id === ingredientId) : null;
+                                                                    const displayName = isPrep ? prepObj?.name : ing?.name;
+                                                                    const displayUnit = rowUnit ?? (isPrep ? prepObj?.yieldUnit : ing?.unit);
+                                                                    if (!displayName) return null;
                                                                     return (
-                                                                        <div key={row.ingredientId} className={`flex justify-between ${textColor}`}>
-                                                                            <span>{ing.name}</span>
-                                                                            <span className="font-mono">−{scaled.toFixed(2)}{displayUnit}</span>
+                                                                        <div key={ingredientId} className="flex items-center justify-between text-xs">
+                                                                            <span className={textColor}>
+                                                                                {displayName}
+                                                                                {isPrep && <span className={`ml-1 text-[10px] text-[#967D62]`}>(prep.)</span>}
+                                                                            </span>
+                                                                            <div className="flex items-center gap-2">
+                                                                                <span className={mutedText}>{qty}{displayUnit}</span>
+                                                                                <button onClick={() => setRecipes(prev => ({ ...prev, [dish]: (prev[dish] || []).filter(r => r.ingredientId !== ingredientId) }))} className="text-red-400 hover:text-red-500"><X className="w-3 h-3" /></button>
+                                                                            </div>
                                                                         </div>
                                                                     );
                                                                 })}
+                                                                <div className="flex gap-2 pt-1">
+                                                                    <div className="flex-1 relative">
+                                                                        <Input
+                                                                            placeholder="Cerca ingrediente o preparazione..."
+                                                                            value={editingRecipeIngId
+                                                                                ? (editingRecipeIngId.startsWith('prep:')
+                                                                                    ? (preparations.find(p => p.id === editingRecipeIngId.replace('prep:', ''))?.name ?? ingredientSearchText)
+                                                                                    : (ingredients.find(i => i.id === editingRecipeIngId)?.name ?? ingredientSearchText))
+                                                                                : ingredientSearchText}
+                                                                            onChange={e => { setIngredientSearchText(e.target.value); setEditingRecipeIngId(''); }}
+                                                                            onFocus={e => setDropdownRect(e.currentTarget.getBoundingClientRect())}
+                                                                            onBlur={() => setTimeout(() => setDropdownRect(null), 150)}
+                                                                            className={`text-xs ${isDinner ? 'border-[#334155] bg-[#1E293B] text-[#F4F1EA]' : 'border-[#EAE5DA] bg-white text-[#2C2A28]'}`}
+                                                                        />
+                                                                        {dropdownRect && !editingRecipeIngId && ingredientSearchText && (() => {
+                                                                            const filteredIngs = ingredients.filter(i => !recipes[dish]?.some(r => r.ingredientId === i.id) && i.name.toLowerCase().includes(ingredientSearchText.toLowerCase()));
+                                                                            const filteredPreps = preparations.filter(p => !recipes[dish]?.some(r => r.ingredientId === 'prep:' + p.id) && p.name.toLowerCase().includes(ingredientSearchText.toLowerCase()));
+                                                                            if (filteredIngs.length === 0 && filteredPreps.length === 0) return null;
+                                                                            return (
+                                                                                <div className={`fixed z-[9999] rounded-lg border shadow-xl overflow-y-auto ${isDinner ? 'bg-[#1E293B] border-[#334155]' : 'bg-white border-[#EAE5DA]'}`} style={{ top: dropdownRect.bottom + 4, left: dropdownRect.left, width: dropdownRect.width, maxHeight: 200 }}>
+                                                                                    {filteredPreps.length > 0 && <div className={`px-3 py-1 text-[10px] font-bold uppercase tracking-wider ${mutedText} border-b ${isDinner ? 'border-[#334155]' : 'border-[#EAE5DA]'}`}>Preparazioni</div>}
+                                                                                    {filteredPreps.map(p => (
+                                                                                        <button key={'prep:'+p.id} onMouseDown={e => { e.preventDefault(); setEditingRecipeIngId('prep:' + p.id); setIngredientSearchText(''); setDropdownRect(null); }} className={`w-full text-left px-3 py-2 text-xs font-medium transition-colors ${isDinner ? 'text-[#F4F1EA] hover:bg-[#334155]' : 'text-[#2C2A28] hover:bg-gray-50'}`}>
+                                                                                            {p.name} <span className={`text-[#967D62]`}>({p.yieldUnit}) — prep.</span>
+                                                                                        </button>
+                                                                                    ))}
+                                                                                    {filteredIngs.length > 0 && <div className={`px-3 py-1 text-[10px] font-bold uppercase tracking-wider ${mutedText} border-b ${isDinner ? 'border-[#334155]' : 'border-[#EAE5DA]'}`}>Ingredienti</div>}
+                                                                                    {filteredIngs.map(i => (
+                                                                                        <button key={i.id} onMouseDown={e => { e.preventDefault(); setEditingRecipeIngId(i.id); setIngredientSearchText(''); setDropdownRect(null); }} className={`w-full text-left px-3 py-2 text-xs font-medium transition-colors ${isDinner ? 'text-[#F4F1EA] hover:bg-[#334155]' : 'text-[#2C2A28] hover:bg-gray-50'}`}>
+                                                                                            {i.name} <span className={mutedText}>({i.unit})</span>
+                                                                                        </button>
+                                                                                    ))}
+                                                                                </div>
+                                                                            );
+                                                                        })()}
+                                                                    </div>
+                                                                    {(() => {
+                                                                        const isPrep = editingRecipeIngId && editingRecipeIngId.startsWith('prep:');
+                                                                        const selIng = editingRecipeIngId && !isPrep ? ingredients.find(i => i.id === editingRecipeIngId) : null;
+                                                                        const selPrep = isPrep ? preparations.find(p => p.id === editingRecipeIngId.replace('prep:', '')) : null;
+                                                                        const baseUnit = selIng?.unit ?? selPrep?.yieldUnit ?? '';
+                                                                        const compatUnits = baseUnit ? getCompatibleUnits(baseUnit) : [];
+                                                                        return (
+                                                                            <div className="flex flex-col gap-1">
+                                                                                <div className="flex gap-1 items-center">
+                                                                                    <Input type="number" placeholder="Qty" value={editingRecipeQty} onChange={e => setEditingRecipeQty(e.target.value)} className={`w-16 text-xs ${isDinner ? 'border-[#334155] bg-[#1E293B]' : 'border-[#EAE5DA]'}`} />
+                                                                                    {compatUnits.length > 1 ? (
+                                                                                        <select value={editingRecipePcsYield || baseUnit} onChange={e => setEditingRecipePcsYield(e.target.value)} className={`w-14 rounded-md border text-xs px-1 h-8 ${isDinner ? 'border-[#334155] bg-[#1E293B] text-[#F4F1EA]' : 'border-[#EAE5DA] bg-white text-[#2C2A28]'}`}>
+                                                                                            {compatUnits.map(u => <option key={u} value={u}>{u}</option>)}
+                                                                                        </select>
+                                                                                    ) : (
+                                                                                        <span className={`text-xs w-8 ${mutedText}`}>{baseUnit}</span>
+                                                                                    )}
+                                                                                </div>
+                                                                            </div>
+                                                                        );
+                                                                    })()}
+                                                                    <button onClick={() => {
+                                                                        const isPrep = editingRecipeIngId.startsWith('prep:');
+                                                                        const prepObj = isPrep ? preparations.find(p => p.id === editingRecipeIngId.replace('prep:', '')) : null;
+                                                                        const ingObj = !isPrep ? ingredients.find(i => i.id === editingRecipeIngId) : null;
+                                                                        const validId = isPrep ? (prepObj ? editingRecipeIngId : null) : ingObj?.id;
+                                                                        if (!validId || !editingRecipeQty) return;
+                                                                        const baseUnit = ingObj?.unit ?? prepObj?.yieldUnit ?? '';
+                                                                        const selectedUnit = editingRecipePcsYield || baseUnit;
+                                                                        setRecipes(prev => ({ ...prev, [dish]: [...(prev[dish] || []), { ingredientId: validId, qty: Number(editingRecipeQty), unit: selectedUnit }] }));
+                                                                        setEditingRecipeIngId(''); setEditingRecipeQty(''); setEditingRecipePcsYield(''); setIngredientSearchText('');
+                                                                    }} className="px-2 py-1 rounded-md bg-[#967D62] text-white text-xs font-bold hover:bg-[#7A654E] self-end">
+                                                                        <Plus className="w-3 h-3" />
+                                                                    </button>
+                                                                </div>
                                                             </div>
                                                         )}
                                                     </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </CardContent>
-                                </Card>
-
-                            </div>
-
-                            {/* PREPARAZIONI COME INGREDIENTI NELLE RICETTE — avviso informativo */}
-                            {preparations.length > 0 && (
-                                <div className={`flex items-start gap-3 p-4 rounded-xl border ${isDinner ? 'bg-[#967D62]/10 border-[#967D62]/30' : 'bg-[#967D62]/5 border-[#967D62]/20'}`}>
-                                    <BookOpen className={`w-4 h-4 shrink-0 mt-0.5 text-[#967D62]`} />
-                                    <p className={`text-sm ${textColor}`}>
-                                        Le preparazioni compaiono automaticamente come ingredienti selezionabili nelle <strong>Ricette dei piatti</strong> (tab Inventario). Quando aggiungi "Maionese" a un piatto, il sistema usa il costo per {preparations[0]?.yieldUnit ?? 'unità'} calcolato dalla sua ricetta.
-                                    </p>
-                                </div>
-                            )}
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </Card>
                         </div>
                     )}
 
@@ -1311,7 +1025,7 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                 </div>
 
                 {/* ── Accesso secondario: Prenotazioni e Gestione Sala ── */}
-                {planTab !== 'inventario' && planTab !== 'preparazioni' && (
+                {planTab !== 'inventario' && planTab !== 'ricette' && (
                 <div className={`flex items-center gap-3 pt-4 pb-2 px-1 border-t ${isDinner ? 'border-[#334155]' : 'border-[#EAE5DA]'}`}>
                     <button
                         onClick={() => setActiveView('Prenotazioni')}
