@@ -143,8 +143,43 @@ export function PianificazioneView(props: PianificazioneViewProps) {
   const getCompatibleUnits = (baseUnit: string): string[] => {
     if (['g', 'kg'].includes(baseUnit)) return ['g', 'kg'];
     if (['ml', 'cl', 'l'].includes(baseUnit)) return ['ml', 'cl', 'l'];
-    if (baseUnit === 'pz') return ['pz'];
+    if (['pz', 'conf'].includes(baseUnit)) return ['pz', 'conf'];
     return [baseUnit];
+  };
+
+  // MCM tra due interi
+  const gcd = (a: number, b: number): number => b === 0 ? a : gcd(b, a % b);
+  const lcm = (a: number, b: number): number => (a * b) / gcd(a, b);
+
+  // Dato un ingrediente a pz/conf, calcola il MCM di tutti i denominatori (portionsPerPiece)
+  // tra ricette e preparazioni, per normalizzare a una frazione comune
+  const getPieceMcm = (ingredientId: string): number => {
+    const denominators: number[] = [];
+    // Scansiona tutte le ricette
+    Object.values(recipes).forEach(rows => {
+      rows.forEach((row: any) => {
+        if (row.ingredientId === ingredientId && row.portionsPerPiece && row.portionsPerPiece > 0) {
+          denominators.push(Math.round(row.portionsPerPiece));
+        }
+      });
+    });
+    // Scansiona tutte le preparazioni
+    preparations.forEach(prep => {
+      prep.ingredients.forEach((row: any) => {
+        if (row.ingredientId === ingredientId && row.portionsPerPiece && row.portionsPerPiece > 0) {
+          denominators.push(Math.round(row.portionsPerPiece));
+        }
+      });
+    });
+    if (denominators.length === 0) return 1;
+    return denominators.reduce((acc, d) => lcm(acc, d), 1);
+  };
+
+  // Per un ingrediente a pz/conf: quante "parti MCM" usa 1 porzione del piatto
+  // portionsPerPiece=5 significa "1 conf fa 5 porzioni" → 1 porzione usa mcm/5 parti
+  const getPiecePartsPerPortion = (ingredientId: string, portionsPerPiece: number): number => {
+    const m = getPieceMcm(ingredientId);
+    return m / Math.round(portionsPerPiece);
   };
 
   // State locale per tracciare quale prep ha il dropdown ingrediente aperto (separato da editingPrepId)
@@ -235,7 +270,7 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                                                     }
                                                     return (
                                                         <select value={newIngUnit} onChange={e => setNewIngUnit(e.target.value)} className={`w-20 rounded-md border text-sm px-2 ${isDinner ? 'border-[#334155] bg-[#1E293B] text-[#F4F1EA]' : 'border-[#EAE5DA] bg-white text-[#2C2A28]'}`}>
-                                                            {['g', 'kg', 'ml', 'l', 'pz', 'cl'].map(u => <option key={u} value={u}>{u}</option>)}
+                                                            {['g', 'kg', 'ml', 'l', 'cl', 'pz', 'conf'].map(u => <option key={u} value={u}>{u}</option>)}
                                                         </select>
                                                     );
                                                 })()}
@@ -252,10 +287,10 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                                                 const isNewWeight = weightGroup.includes(newIngUnit);
                                                 const isNewLiquid = liquidGroup.includes(newIngUnit);
                                                 if (isPieceUnit(origUnit) && !isPieceUnit(newIngUnit)) {
-                                                    return <p className="text-xs text-red-500 font-medium">⚠ Questo ingrediente è registrato a pezzi — non puoi aggiungere quantità in {newIngUnit}.</p>;
+                                                    return <p className="text-xs text-red-500 font-medium">⚠ Questo ingrediente è a pezzi/confezioni — non puoi aggiungere quantità in {newIngUnit}.</p>;
                                                 }
                                                 if (!isPieceUnit(origUnit) && isPieceUnit(newIngUnit)) {
-                                                    return <p className="text-xs text-red-500 font-medium">⚠ Questo ingrediente è registrato in {origUnit} — non puoi aggiungere quantità a pezzi.</p>;
+                                                    return <p className="text-xs text-red-500 font-medium">⚠ Questo ingrediente è registrato in {origUnit} — non puoi aggiungere quantità a pezzi/confezioni.</p>;
                                                 }
                                                 if (isOrigWeight && isNewLiquid) {
                                                     return <p className="text-xs text-red-500 font-medium">⚠ Questo ingrediente è registrato in {origUnit} (peso) — non puoi aggiungere quantità in {newIngUnit} (volume).</p>;
@@ -516,7 +551,7 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                                                     <Input type="number" placeholder="Es. 500" value={newPrepYieldQty} onChange={e => setNewPrepYieldQty(e.target.value)} className={isDinner ? 'border-[#334155] bg-[#1E293B]' : 'border-[#EAE5DA]'} />
                                                 </div>
                                                 <select value={newPrepYieldUnit} onChange={e => setNewPrepYieldUnit(e.target.value)} className={`w-20 rounded-md border text-sm px-2 h-9 ${isDinner ? 'border-[#334155] bg-[#1E293B] text-[#F4F1EA]' : 'border-[#EAE5DA] bg-white text-[#2C2A28]'}`}>
-                                                    {['g', 'kg', 'ml', 'l', 'pz', 'cl'].map(u => <option key={u} value={u}>{u}</option>)}
+                                                    {['g', 'kg', 'ml', 'l', 'cl', 'pz', 'conf'].map(u => <option key={u} value={u}>{u}</option>)}
                                                 </select>
                                             </div>
                                             <Button onClick={() => {
@@ -557,8 +592,13 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                                                                 if (sup) ppu = sup.pricePerBox / sup.qtyPerBox;
                                                             }
                                                             if (ppu == null) { missing = true; return; }
-                                                            const qtyInBase = normalizeToBase(row.qty, row.unit ?? ing.unit, ing.unit);
-                                                            total += ppu * qtyInBase;
+                                                            if ((row as any).portionsPerPiece && (row as any).portionsPerPiece > 0) {
+                                                                // Ingrediente a pz/conf: costo per porzione = ppu / portionsPerPiece
+                                                                total += ppu / (row as any).portionsPerPiece;
+                                                            } else {
+                                                                const qtyInBase = normalizeToBase(row.qty, row.unit ?? ing.unit, ing.unit);
+                                                                total += ppu * qtyInBase;
+                                                            }
                                                         });
                                                         return missing ? null : total / prep.yieldQty;
                                                     })();
@@ -593,7 +633,10 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                                                                         <div key={row.ingredientId} className="flex items-center justify-between text-xs">
                                                                             <span className={textColor}>{ing.name}</span>
                                                                             <div className="flex items-center gap-2">
-                                                                                <span className={mutedText}>{row.qty}{row.unit ?? ing.unit}</span>
+                                                                                {row.portionsPerPiece
+                                                                                    ? <span className={mutedText}>1 {row.unit ?? ing.unit} → {row.portionsPerPiece} porz.</span>
+                                                                                    : <span className={mutedText}>{row.qty}{row.unit ?? ing.unit}</span>
+                                                                                }
                                                                                 <button onClick={() => setPreparations(prev => prev.map(p => p.id === prep.id ? { ...p, ingredients: p.ingredients.filter(r => r.ingredientId !== row.ingredientId) } : p))} className="text-red-400 hover:text-red-500"><X className="w-3 h-3" /></button>
                                                                             </div>
                                                                         </div>
@@ -622,9 +665,21 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                                                                     {(() => {
                                                                         const selIng = prepIngId ? ingredients.find(i => i.id === prepIngId) : null;
                                                                         const baseUnit = selIng?.unit ?? '';
+                                                                        const isPiece = baseUnit ? isPieceUnit(baseUnit) : false;
                                                                         const compatUnits = baseUnit ? getCompatibleUnits(baseUnit) : [];
                                                                         const [qtyPart, unitPart] = (activePrepIngDropdownId === prep.id ? prepIngQty : '').split('|');
                                                                         const currentUnit = unitPart || baseUnit;
+                                                                        if (isPiece) {
+                                                                            return (
+                                                                                <div className="flex flex-col gap-1 min-w-[110px]">
+                                                                                    <span className={`text-[10px] ${mutedText}`}>Con 1 {baseUnit} faccio</span>
+                                                                                    <div className="flex gap-1 items-center">
+                                                                                        <Input type="number" min="1" placeholder="Es. 5" value={qtyPart || ''} onChange={e => setPrepIngQty(`${e.target.value}|${baseUnit}`)} className={`w-14 text-xs ${isDinner ? 'border-[#334155] bg-[#1E293B]' : 'border-[#EAE5DA]'}`} />
+                                                                                        <span className={`text-[10px] ${mutedText}`}>porz.</span>
+                                                                                    </div>
+                                                                                </div>
+                                                                            );
+                                                                        }
                                                                         return (
                                                                             <div className="flex gap-1 items-center">
                                                                                 <Input type="number" placeholder="Qty" value={qtyPart || ''} onChange={e => setPrepIngQty(`${e.target.value}|${currentUnit || baseUnit}`)} className={`w-16 text-xs ${isDinner ? 'border-[#334155] bg-[#1E293B]' : 'border-[#EAE5DA]'}`} />
@@ -645,8 +700,15 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                                                                         if (!validId || !qtyPart) return;
                                                                         const selIng = ingredients.find(i => i.id === prepIngId);
                                                                         const baseUnit = selIng?.unit ?? '';
-                                                                        const selectedUnit = unitPart || baseUnit;
-                                                                        setPreparations(prev => prev.map(p => p.id === prep.id ? { ...p, ingredients: [...p.ingredients, { ingredientId: validId, qty: Number(qtyPart), unit: selectedUnit }] } : p));
+                                                                        const isPiece = isPieceUnit(baseUnit);
+                                                                        if (isPiece) {
+                                                                            const portionsPerPiece = Number(qtyPart);
+                                                                            if (portionsPerPiece <= 0) return;
+                                                                            setPreparations(prev => prev.map(p => p.id === prep.id ? { ...p, ingredients: [...p.ingredients, { ingredientId: validId, qty: 0, unit: baseUnit, portionsPerPiece }] } : p));
+                                                                        } else {
+                                                                            const selectedUnit = unitPart || baseUnit;
+                                                                            setPreparations(prev => prev.map(p => p.id === prep.id ? { ...p, ingredients: [...p.ingredients, { ingredientId: validId, qty: Number(qtyPart), unit: selectedUnit }] } : p));
+                                                                        }
                                                                         setPrepIngId(''); setPrepIngQty(''); setPrepIngSearch(''); setActivePrepIngDropdownId(null);
                                                                     }} className="px-2 py-1 rounded-md bg-[#967D62] text-white text-xs font-bold hover:bg-[#7A654E]">
                                                                         <Plus className="w-3 h-3" />
@@ -692,12 +754,13 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                                                         </button>
                                                         {isEditing && (
                                                             <div className={`p-3 space-y-2 ${isDinner ? 'bg-[#0F172A]' : 'bg-gray-50'}`}>
-                                                                {dishRecipe.map(({ ingredientId, qty, unit: rowUnit }) => {
+                                                                {dishRecipe.map(({ ingredientId, qty, unit: rowUnit, portionsPerPiece }: any) => {
                                                                     const isPrep = ingredientId.startsWith('prep:');
                                                                     const prepObj = isPrep ? preparations.find(p => p.id === ingredientId.replace('prep:', '')) : null;
                                                                     const ing = !isPrep ? ingredients.find(i => i.id === ingredientId) : null;
                                                                     const displayName = isPrep ? prepObj?.name : ing?.name;
-                                                                    const displayUnit = rowUnit ?? (isPrep ? prepObj?.yieldUnit : ing?.unit);
+                                                                    const baseUnit = rowUnit ?? (isPrep ? prepObj?.yieldUnit : ing?.unit);
+                                                                    const isPiece = baseUnit ? isPieceUnit(baseUnit) : false;
                                                                     if (!displayName) return null;
                                                                     return (
                                                                         <div key={ingredientId} className="flex items-center justify-between text-xs">
@@ -706,7 +769,10 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                                                                                 {isPrep && <span className={`ml-1 text-[10px] text-[#967D62]`}>(prep.)</span>}
                                                                             </span>
                                                                             <div className="flex items-center gap-2">
-                                                                                <span className={mutedText}>{qty}{displayUnit}</span>
+                                                                                {isPiece && portionsPerPiece
+                                                                                    ? <span className={mutedText}>1 {baseUnit} → {portionsPerPiece} porz.</span>
+                                                                                    : <span className={mutedText}>{qty}{baseUnit}</span>
+                                                                                }
                                                                                 <button onClick={() => setRecipes(prev => ({ ...prev, [dish]: (prev[dish] || []).filter(r => r.ingredientId !== ingredientId) }))} className="text-red-400 hover:text-red-500"><X className="w-3 h-3" /></button>
                                                                             </div>
                                                                         </div>
@@ -753,7 +819,19 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                                                                         const selIng = editingRecipeIngId && !isPrep ? ingredients.find(i => i.id === editingRecipeIngId) : null;
                                                                         const selPrep = isPrep ? preparations.find(p => p.id === editingRecipeIngId.replace('prep:', '')) : null;
                                                                         const baseUnit = selIng?.unit ?? selPrep?.yieldUnit ?? '';
+                                                                        const isPiece = isPieceUnit(baseUnit);
                                                                         const compatUnits = baseUnit ? getCompatibleUnits(baseUnit) : [];
+                                                                        if (isPiece) {
+                                                                            return (
+                                                                                <div className="flex flex-col gap-1 min-w-[120px]">
+                                                                                    <span className={`text-[10px] ${mutedText}`}>Con 1 {baseUnit} faccio</span>
+                                                                                    <div className="flex gap-1 items-center">
+                                                                                        <Input type="number" min="1" placeholder="Es. 5" value={editingRecipeQty} onChange={e => setEditingRecipeQty(e.target.value)} className={`w-16 text-xs ${isDinner ? 'border-[#334155] bg-[#1E293B]' : 'border-[#EAE5DA]'}`} />
+                                                                                        <span className={`text-xs ${mutedText}`}>porzioni</span>
+                                                                                    </div>
+                                                                                </div>
+                                                                            );
+                                                                        }
                                                                         return (
                                                                             <div className="flex flex-col gap-1">
                                                                                 <div className="flex gap-1 items-center">
@@ -776,8 +854,15 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                                                                         const validId = isPrep ? (prepObj ? editingRecipeIngId : null) : ingObj?.id;
                                                                         if (!validId || !editingRecipeQty) return;
                                                                         const baseUnit = ingObj?.unit ?? prepObj?.yieldUnit ?? '';
-                                                                        const selectedUnit = editingRecipePcsYield || baseUnit;
-                                                                        setRecipes(prev => ({ ...prev, [dish]: [...(prev[dish] || []), { ingredientId: validId, qty: Number(editingRecipeQty), unit: selectedUnit }] }));
+                                                                        const isPiece = isPieceUnit(baseUnit);
+                                                                        if (isPiece) {
+                                                                            const portionsPerPiece = Number(editingRecipeQty);
+                                                                            if (portionsPerPiece <= 0) return;
+                                                                            setRecipes(prev => ({ ...prev, [dish]: [...(prev[dish] || []), { ingredientId: validId, qty: 0, unit: baseUnit, portionsPerPiece }] }));
+                                                                        } else {
+                                                                            const selectedUnit = editingRecipePcsYield || baseUnit;
+                                                                            setRecipes(prev => ({ ...prev, [dish]: [...(prev[dish] || []), { ingredientId: validId, qty: Number(editingRecipeQty), unit: selectedUnit }] }));
+                                                                        }
                                                                         setEditingRecipeIngId(''); setEditingRecipeQty(''); setEditingRecipePcsYield(''); setIngredientSearchText('');
                                                                     }} className="px-2 py-1 rounded-md bg-[#967D62] text-white text-xs font-bold hover:bg-[#7A654E] self-end">
                                                                         <Plus className="w-3 h-3" />
