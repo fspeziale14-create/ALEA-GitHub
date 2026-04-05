@@ -68,6 +68,8 @@ interface PianificazioneViewProps {
   prepIngQty: string; setPrepIngQty: (v: string) => void;
   prepDropdownRect: DOMRect | null; setPrepDropdownRect: (v: DOMRect | null) => void;
   prepBatchQty: Record<string, string>; setPrepBatchQty: (fn: any) => void;
+  newPrepIdealQty: string; setNewPrepIdealQty: (v: string) => void;
+  newPrepEditingIdeal: boolean; setNewPrepEditingIdeal: (v: boolean) => void;
   // utils
   convertToUnit: (v: number, f: string, t: string) => number | null;
   isPieceUnit: (u: string) => boolean;
@@ -124,6 +126,8 @@ export function PianificazioneView(props: PianificazioneViewProps) {
   const prepIngQty = p.prepIngQty; const setPrepIngQty = p.setPrepIngQty;
   const prepDropdownRect = p.prepDropdownRect; const setPrepDropdownRect = p.setPrepDropdownRect;
   const prepBatchQty = p.prepBatchQty; const setPrepBatchQty = p.setPrepBatchQty;
+  const newPrepIdealQty = p.newPrepIdealQty; const setNewPrepIdealQty = p.setNewPrepIdealQty;
+  const newPrepEditingIdeal = p.newPrepEditingIdeal; const setNewPrepEditingIdeal = p.setNewPrepEditingIdeal;
   const weekGenerated = p.weekGenerated; const isGeneratingStaff = p.isGeneratingStaff;
   const weeklyStaffData = p.weeklyStaffData; const staffDateRange = p.staffDateRange;
   const generateStaffPlan = p.generateStaffPlan;
@@ -252,156 +256,226 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                                                 }
                                                 return null;
                                             })()}
-                                            {/* Riga 2: Fornitore */}
+                                            {/* Riga 2: Fornitore / Preparazione */}
                                             {(() => {
                                                 const existingIng = ingredients.find(i => i.name.toLowerCase() === newIngName.toLowerCase());
                                                 const existingSuppliers = existingIng?.suppliers || [];
                                                 const selectedSupplierData = existingSuppliers.find(s => s.name === newIngSelectedSupplier);
+                                                const matchingPrep = preparations.find(pr => pr.name.toLowerCase() === newIngName.toLowerCase());
+                                                const isPrepMode = newIngSupplierMode === ('preparazione' as any);
                                                 return (
                                                     <div className="space-y-2">
-                                                        <Label className={`text-xs ${mutedText}`}>Fornitore</Label>
-                                                        {existingSuppliers.length > 0 && (
-                                                            <div className="flex gap-1 mb-1">
+                                                        <Label className={`text-xs ${mutedText}`}>{isPrepMode ? 'Registra Produzione' : 'Fornitore'}</Label>
+                                                        {/* Bottoni modalità */}
+                                                        <div className="flex gap-1 mb-1 flex-wrap">
+                                                            {existingSuppliers.length > 0 && !isPrepMode && (
                                                                 <button onClick={() => { setNewIngSupplierMode('existing'); setNewIngBoxCount(''); }} className={`px-3 py-1.5 rounded-md text-xs font-semibold border transition-colors ${newIngSupplierMode === 'existing' ? 'bg-[#967D62] text-white border-[#967D62]' : (isDinner ? 'border-[#334155] text-[#94A3B8]' : 'border-[#EAE5DA] text-[#8C8A85]')}`}>Esistente</button>
+                                                            )}
+                                                            {!isPrepMode ? (
                                                                 <button onClick={() => { setNewIngSupplierMode('new'); setNewIngSelectedSupplier(''); setNewIngBoxCount(''); }} className={`px-3 py-1.5 rounded-md text-xs font-semibold border transition-colors ${newIngSupplierMode === 'new' ? 'bg-[#967D62] text-white border-[#967D62]' : (isDinner ? 'border-[#334155] text-[#94A3B8]' : 'border-[#EAE5DA] text-[#8C8A85]')}`}>Nuovo</button>
-                                                            </div>
-                                                        )}
-                                                        {(newIngSupplierMode === 'new' || existingSuppliers.length === 0) ? (
-                                                            <Input placeholder="Nome fornitore" value={newIngSupplierName} onChange={e => setNewIngSupplierName(e.target.value)} className={`w-full ${isDinner ? 'border-[#334155] bg-[#1E293B]' : 'border-[#EAE5DA]'}`} />
-                                                        ) : (
-                                                            <select value={newIngSelectedSupplier} onChange={e => setNewIngSelectedSupplier(e.target.value)} className={`w-full rounded-md border text-sm px-2 h-9 ${isDinner ? 'border-[#334155] bg-[#1E293B] text-[#F4F1EA]' : 'border-[#EAE5DA] bg-white text-[#2C2A28]'}`}>
-                                                                <option value="">Seleziona fornitore</option>
-                                                                {existingSuppliers.map(s => <option key={s.name} value={s.name}>{s.name} ({s.qtyPerBox}{s.unit || newIngUnit}/scatolone)</option>)}
-                                                            </select>
-                                                        )}
-                                                        {/* Riga 3: Qt per scatolone + Prezzo (solo se nuovo fornitore) */}
-                                                        {(newIngSupplierMode === 'new' || existingSuppliers.length === 0) && (
-                                                            <div className="flex gap-2 items-end">
-                                                                <div className="flex-1 space-y-1">
-                                                                    <Label className={`text-xs ${mutedText}`}>Qtà in 1 scatolone</Label>
-                                                                    <div className="flex items-center gap-1">
-                                                                        <Input type="number" placeholder={`Es. 25`} value={newIngQtyPerBox} onChange={e => setNewIngQtyPerBox(e.target.value)} className={isDinner ? 'border-[#334155] bg-[#1E293B]' : 'border-[#EAE5DA]'} />
-                                                                        <span className={`text-xs whitespace-nowrap ${mutedText}`}>{newIngUnit}</span>
-                                                                    </div>
-                                                                </div>
-                                                                <div className="flex-1 space-y-1">
-                                                                    <Label className={`text-xs ${mutedText}`}>Prezzo scatolone</Label>
-                                                                    <div className="flex items-center gap-1">
-                                                                        <span className={`text-xs ${mutedText}`}>€</span>
-                                                                        <Input type="number" placeholder="Es. 18.50" value={newIngPricePerBox} onChange={e => setNewIngPricePerBox(e.target.value)} className={isDinner ? 'border-[#334155] bg-[#1E293B]' : 'border-[#EAE5DA]'} />
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        )}
-                                                        {/* Riga 3b: Prezzo con matita (solo se fornitore esistente) */}
-                                                        {newIngSupplierMode === 'existing' && existingSuppliers.length > 0 && (() => {
-                                                            const existingPrice = selectedSupplierData?.pricePerBox;
-                                                            return (
+                                                            ) : (
+                                                                <button onClick={() => { setNewIngSupplierMode('new'); setNewIngBoxCount(''); setNewPrepEditingIdeal(false); setNewPrepIdealQty(''); }} className={`px-3 py-1.5 rounded-md text-xs font-semibold border transition-colors ${isDinner ? 'border-[#334155] text-[#94A3B8]' : 'border-[#EAE5DA] text-[#8C8A85]'}`}>Fornitore</button>
+                                                            )}
+                                                            {matchingPrep && (
+                                                                <button onClick={() => { setNewIngSupplierMode('preparazione' as any); setNewIngBoxCount(''); }} className={`px-3 py-1.5 rounded-md text-xs font-semibold border transition-colors flex items-center gap-1 ${isPrepMode ? 'bg-[#967D62] text-white border-[#967D62]' : (isDinner ? 'border-[#334155] text-[#94A3B8]' : 'border-[#EAE5DA] text-[#8C8A85]')}`}><CookingPot className="w-3 h-3" /> Preparazione</button>
+                                                            )}
+                                                        </div>
+
+                                                        {isPrepMode && matchingPrep ? (
+                                                            /* ── Modalità PREPARAZIONE ── */
+                                                            <div className={`p-3 rounded-lg border space-y-2 ${isDinner ? 'bg-[#1E293B] border-[#334155]' : 'bg-white border-[#EAE5DA]'}`}>
+                                                                <p className={`text-xs ${mutedText}`}>Batch di <strong className={textColor}>{matchingPrep.name}</strong> — resa canonica: {matchingPrep.yieldQty}{matchingPrep.yieldUnit}</p>
                                                                 <div className="space-y-1">
-                                                                    <Label className={`text-xs ${mutedText}`}>Prezzo scatolone</Label>
-                                                                    {!newIngEditingPrice ? (
+                                                                    <Label className={`text-xs ${mutedText}`}>Quantità prodotta ({matchingPrep.yieldUnit})</Label>
+                                                                    <Input type="number" placeholder={`Es. ${matchingPrep.yieldQty}`} value={newIngBoxCount} onChange={e => setNewIngBoxCount(e.target.value)} className={isDinner ? 'border-[#334155] bg-[#1E293B]' : 'border-[#EAE5DA]'} />
+                                                                </div>
+                                                                <div className="space-y-1">
+                                                                    <Label className={`text-xs ${mutedText}`}>Quantità ideale in magazzino ({matchingPrep.yieldUnit})</Label>
+                                                                    {matchingPrep.idealQty > 0 && !newPrepEditingIdeal ? (
                                                                         <div className={`flex items-center gap-2 h-9 px-3 rounded-md border ${isDinner ? 'border-[#334155] bg-[#1E293B]' : 'border-[#EAE5DA] bg-gray-100'}`}>
-                                                                            <span className={`text-xs ${mutedText}`}>€</span>
-                                                                            <span className={`flex-1 text-sm ${mutedText}`}>{existingPrice?.toFixed(2) ?? '—'}</span>
-                                                                            <button onClick={() => { setNewIngEditingPrice(true); setNewIngPricePerBox(String(existingPrice ?? '')); }} className={`${mutedText} hover:text-[#967D62] transition-colors`}><Pencil className="w-3.5 h-3.5" /></button>
+                                                                            <span className={`flex-1 text-sm ${mutedText}`}>{matchingPrep.idealQty}{matchingPrep.yieldUnit}</span>
+                                                                            <button onClick={() => { setNewPrepEditingIdeal(true); setNewPrepIdealQty(String(matchingPrep.idealQty)); }} className={`${mutedText} hover:text-[#967D62] transition-colors`}><Pencil className="w-3.5 h-3.5" /></button>
                                                                         </div>
                                                                     ) : (
-                                                                        <div className="flex items-center gap-1">
-                                                                            <span className={`text-xs ${mutedText}`}>€</span>
-                                                                            <Input type="number" placeholder="Es. 18.50" value={newIngPricePerBox} onChange={e => setNewIngPricePerBox(e.target.value)} className={isDinner ? 'border-[#334155] bg-[#1E293B]' : 'border-[#EAE5DA]'} />
-                                                                        </div>
+                                                                        <Input type="number" placeholder="Es. 1000" value={newPrepIdealQty} onChange={e => setNewPrepIdealQty(e.target.value)} className={isDinner ? 'border-[#334155] bg-[#1E293B]' : 'border-[#EAE5DA]'} />
                                                                     )}
                                                                 </div>
-                                                            );
-                                                        })()}
-                                                        {/* Riga 4: Numero scatoloni + Qt ideale + bottone */}
-                                                        <div className="flex gap-2 items-end">
-                                                            <div className="space-y-1">
-                                                                <Label className={`text-xs ${mutedText}`}>N° scatoloni</Label>
-                                                                <Input type="number" placeholder="Es. 3" value={newIngBoxCount} onChange={e => setNewIngBoxCount(e.target.value)} className={`w-24 ${isDinner ? 'border-[#334155] bg-[#1E293B]' : 'border-[#EAE5DA]'}`} />
+                                                                {newIngBoxCount && Number(newIngBoxCount) > 0 && matchingPrep.yieldQty > 0 && (
+                                                                    <div className={`p-2 rounded-lg text-xs space-y-1 ${isDinner ? 'bg-[#0F172A]' : 'bg-gray-50'}`}>
+                                                                        <p className={`font-semibold ${mutedText}`}>Verrà scalato dal magazzino:</p>
+                                                                        {matchingPrep.ingredients.map(row => {
+                                                                            const ingRow = ingredients.find(i => i.id === row.ingredientId);
+                                                                            if (!ingRow) return null;
+                                                                            const ratio = Number(newIngBoxCount) / matchingPrep.yieldQty;
+                                                                            const qtyInBase = normalizeToBase(row.qty, row.unit ?? ingRow.unit, ingRow.unit);
+                                                                            return (
+                                                                                <div key={row.ingredientId} className={`flex justify-between ${textColor}`}>
+                                                                                    <span>{ingRow.name}</span>
+                                                                                    <span className="font-mono">−{(qtyInBase * ratio).toFixed(2)}{ingRow.unit}</span>
+                                                                                </div>
+                                                                            );
+                                                                        })}
+                                                                    </div>
+                                                                )}
+                                                                <Button onClick={() => {
+                                                                    const batchQty = Number(newIngBoxCount);
+                                                                    if (!batchQty || batchQty <= 0 || matchingPrep.yieldQty <= 0) return;
+                                                                    const ratio = batchQty / matchingPrep.yieldQty;
+                                                                    // Scala ingredienti dal magazzino
+                                                                    setIngredients(prev => {
+                                                                        const updated = [...prev];
+                                                                        matchingPrep.ingredients.forEach(row => {
+                                                                            const idx = updated.findIndex(i => i.id === row.ingredientId);
+                                                                            if (idx !== -1) {
+                                                                                const qtyInBase = normalizeToBase(row.qty, row.unit ?? updated[idx].unit, updated[idx].unit);
+                                                                                updated[idx] = { ...updated[idx], currentQty: Math.max(0, updated[idx].currentQty - qtyInBase * ratio) };
+                                                                            }
+                                                                        });
+                                                                        return updated;
+                                                                    });
+                                                                    // Aggiorna currentQty e idealQty della preparazione
+                                                                    const newIdeal = newPrepEditingIdeal && newPrepIdealQty ? Number(newPrepIdealQty) : (matchingPrep.idealQty > 0 ? matchingPrep.idealQty : (newPrepIdealQty ? Number(newPrepIdealQty) : 0));
+                                                                    setPreparations(prev => prev.map(pr => pr.id === matchingPrep.id
+                                                                        ? { ...pr, currentQty: pr.currentQty + batchQty, idealQty: newIdeal }
+                                                                        : pr));
+                                                                    setNewIngName(''); setNewIngBoxCount(''); setNewIngSupplierMode('new'); setNewPrepEditingIdeal(false); setNewPrepIdealQty('');
+                                                                }} className="w-full bg-[#967D62] hover:bg-[#7A654E] text-white">
+                                                                    <Check className="w-4 h-4 mr-2" /> Registra Produzione
+                                                                </Button>
                                                             </div>
-                                                            <div className="flex-1 space-y-1">
-                                                                <Label className={`text-xs ${mutedText}`}>Quantità ideale</Label>
-                                                                {(() => {
-                                                                    const isExisting = ingredients.some(i => i.name.toLowerCase() === newIngName.toLowerCase());
-                                                                    const existingIdeal = ingredients.find(i => i.name.toLowerCase() === newIngName.toLowerCase())?.idealQty;
-                                                                    if (isExisting && !newIngEditingIdeal) {
-                                                                        return (
-                                                                            <div className={`flex items-center gap-2 h-9 px-3 rounded-md border ${isDinner ? 'border-[#334155] bg-[#1E293B]' : 'border-[#EAE5DA] bg-gray-100'}`}>
-                                                                                <span className={`flex-1 text-sm ${mutedText}`}>{existingIdeal}{newIngUnit}</span>
-                                                                                <button onClick={() => { setNewIngEditingIdeal(true); setNewIngIdeal(String(existingIdeal)); }} className={`${mutedText} hover:text-[#967D62] transition-colors`}><Pencil className="w-3.5 h-3.5" /></button>
+                                                        ) : (
+                                                            /* ── Modalità FORNITORE (Nuovo o Esistente) ── */
+                                                            <>
+                                                                {(newIngSupplierMode === 'new' || existingSuppliers.length === 0) ? (
+                                                                    <Input placeholder="Nome fornitore" value={newIngSupplierName} onChange={e => setNewIngSupplierName(e.target.value)} className={`w-full ${isDinner ? 'border-[#334155] bg-[#1E293B]' : 'border-[#EAE5DA]'}`} />
+                                                                ) : (
+                                                                    <select value={newIngSelectedSupplier} onChange={e => setNewIngSelectedSupplier(e.target.value)} className={`w-full rounded-md border text-sm px-2 h-9 ${isDinner ? 'border-[#334155] bg-[#1E293B] text-[#F4F1EA]' : 'border-[#EAE5DA] bg-white text-[#2C2A28]'}`}>
+                                                                        <option value="">Seleziona fornitore</option>
+                                                                        {existingSuppliers.map(s => <option key={s.name} value={s.name}>{s.name} ({s.qtyPerBox}{s.unit || newIngUnit}/scatolone)</option>)}
+                                                                    </select>
+                                                                )}
+                                                                {(newIngSupplierMode === 'new' || existingSuppliers.length === 0) && (
+                                                                    <div className="flex gap-2 items-end">
+                                                                        <div className="flex-1 space-y-1">
+                                                                            <Label className={`text-xs ${mutedText}`}>Qtà in 1 scatolone</Label>
+                                                                            <div className="flex items-center gap-1">
+                                                                                <Input type="number" placeholder={`Es. 25`} value={newIngQtyPerBox} onChange={e => setNewIngQtyPerBox(e.target.value)} className={isDinner ? 'border-[#334155] bg-[#1E293B]' : 'border-[#EAE5DA]'} />
+                                                                                <span className={`text-xs whitespace-nowrap ${mutedText}`}>{newIngUnit}</span>
                                                                             </div>
-                                                                        );
-                                                                    }
-                                                                    return <Input type="number" placeholder="Es. 5000" value={newIngIdeal} onChange={e => setNewIngIdeal(e.target.value)} className={isDinner ? 'border-[#334155] bg-[#1E293B]' : 'border-[#EAE5DA]'} />;
+                                                                        </div>
+                                                                        <div className="flex-1 space-y-1">
+                                                                            <Label className={`text-xs ${mutedText}`}>Prezzo scatolone</Label>
+                                                                            <div className="flex items-center gap-1">
+                                                                                <span className={`text-xs ${mutedText}`}>€</span>
+                                                                                <Input type="number" placeholder="Es. 18.50" value={newIngPricePerBox} onChange={e => setNewIngPricePerBox(e.target.value)} className={isDinner ? 'border-[#334155] bg-[#1E293B]' : 'border-[#EAE5DA]'} />
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                                {newIngSupplierMode === 'existing' && existingSuppliers.length > 0 && (() => {
+                                                                    const existingPrice = selectedSupplierData?.pricePerBox;
+                                                                    return (
+                                                                        <div className="space-y-1">
+                                                                            <Label className={`text-xs ${mutedText}`}>Prezzo scatolone</Label>
+                                                                            {!newIngEditingPrice ? (
+                                                                                <div className={`flex items-center gap-2 h-9 px-3 rounded-md border ${isDinner ? 'border-[#334155] bg-[#1E293B]' : 'border-[#EAE5DA] bg-gray-100'}`}>
+                                                                                    <span className={`text-xs ${mutedText}`}>€</span>
+                                                                                    <span className={`flex-1 text-sm ${mutedText}`}>{existingPrice?.toFixed(2) ?? '—'}</span>
+                                                                                    <button onClick={() => { setNewIngEditingPrice(true); setNewIngPricePerBox(String(existingPrice ?? '')); }} className={`${mutedText} hover:text-[#967D62] transition-colors`}><Pencil className="w-3.5 h-3.5" /></button>
+                                                                                </div>
+                                                                            ) : (
+                                                                                <div className="flex items-center gap-1">
+                                                                                    <span className={`text-xs ${mutedText}`}>€</span>
+                                                                                    <Input type="number" placeholder="Es. 18.50" value={newIngPricePerBox} onChange={e => setNewIngPricePerBox(e.target.value)} className={isDinner ? 'border-[#334155] bg-[#1E293B]' : 'border-[#EAE5DA]'} />
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    );
                                                                 })()}
-                                                            </div>
-                                                            <Button onClick={() => {
-                                                                const qtyPerBox = newIngSupplierMode === 'existing' && selectedSupplierData ? selectedSupplierData.qtyPerBox : Number(newIngQtyPerBox);
-                                                                const boxes = Number(newIngBoxCount);
-                                                                const supplierName = newIngSupplierMode === 'existing' ? newIngSelectedSupplier : newIngSupplierName;
-                                                                const effectivePricePerBox = newIngSupplierMode === 'existing' && !newIngEditingPrice && selectedSupplierData
-                                                                    ? selectedSupplierData.pricePerBox
-                                                                    : Number(newIngPricePerBox);
-                                                                const isExistingIng = ingredients.some(i => i.name.toLowerCase() === newIngName.toLowerCase());
-                                                                const effectiveIdeal = isExistingIng && !newIngEditingIdeal
-                                                                    ? String(ingredients.find(i => i.name.toLowerCase() === newIngName.toLowerCase())?.idealQty || '')
-                                                                    : newIngIdeal;
-                                                                if (!newIngName || !effectiveIdeal || !boxes || !qtyPerBox || !supplierName || !effectivePricePerBox) return;
-                                                                const existingIngForConv = ingredients.find(i => i.name.toLowerCase() === newIngName.toLowerCase());
-                                                                const origUnit = existingIngForConv?.unit || newIngUnit;
-                                                                // Blocca se misto pz/misurato
-                                                                const wg = ['g','kg']; const lq = ['ml','l','cl'];
-                                                                const incompatible = existingIngForConv && (
-                                                                    (isPieceUnit(origUnit) && !isPieceUnit(newIngUnit)) ||
-                                                                    (!isPieceUnit(origUnit) && isPieceUnit(newIngUnit)) ||
-                                                                    (wg.includes(origUnit) && lq.includes(newIngUnit)) ||
-                                                                    (lq.includes(origUnit) && wg.includes(newIngUnit))
-                                                                );
-                                                                if (incompatible) return;
-                                                                const rawQty = qtyPerBox * boxes;
-                                                                const supplierUnit = newIngSupplierMode === 'existing' && selectedSupplierData?.unit ? selectedSupplierData.unit : newIngUnit;
-                                                                const converted = existingIngForConv ? convertToUnit(rawQty, supplierUnit, origUnit) : rawQty;
-                                                                const totalQty = converted !== null ? converted : rawQty;
-                                                                const existingIdx = ingredients.findIndex(i => i.name.toLowerCase() === newIngName.toLowerCase());
-                                                                // Calcola pricePerUnit in unità base dell'ingrediente
-                                                                const pricePerBaseUnit = qtyPerBox > 0 ? effectivePricePerBox / qtyPerBox : 0;
-                                                                const purchaseRecord = {
-                                                                    qty: totalQty,
-                                                                    pricePerUnit: pricePerBaseUnit,
-                                                                    date: new Date().toISOString().split('T')[0],
-                                                                    supplierName,
-                                                                };
-                                                                if (existingIdx >= 0) {
-                                                                    setIngredients(prev => prev.map((ing, idx) => {
-                                                                        if (idx !== existingIdx) return ing;
-                                                                        const updatedSuppliers = ing.suppliers || [];
-                                                                        const supIdx = updatedSuppliers.findIndex(s => s.name === supplierName);
-                                                                        const newSuppliers = supIdx >= 0
-                                                                            ? updatedSuppliers.map(s => s.name === supplierName ? { ...s, pricePerBox: effectivePricePerBox } : s)
-                                                                            : [...updatedSuppliers, { name: supplierName, qtyPerBox, pricePerBox: effectivePricePerBox, unit: newIngUnit }];
-                                                                        const updatedIdeal = newIngEditingIdeal && newIngIdeal ? Number(newIngIdeal) : Number(effectiveIdeal) || ing.idealQty;
-                                                                        return { ...ing, currentQty: ing.currentQty + totalQty, idealQty: updatedIdeal, suppliers: newSuppliers, purchaseHistory: [...(ing.purchaseHistory || []), purchaseRecord] };
-                                                                    }));
-                                                                } else {
-                                                                    const id = Date.now().toString();
-                                                                    setIngredients(prev => [...prev, { id, name: newIngName, unit: newIngUnit, idealQty: Number(effectiveIdeal), currentQty: totalQty, suppliers: [{ name: supplierName, qtyPerBox, pricePerBox: effectivePricePerBox, unit: newIngUnit }], purchaseHistory: [purchaseRecord] }]);
-                                                                }
-                                                                setNewIngName(''); setNewIngIdeal(''); setNewIngSupplierName(''); setNewIngQtyPerBox(''); setNewIngBoxCount(''); setNewIngSelectedSupplier(''); setNewIngSupplierMode('new'); setNewIngEditingIdeal(false); setNewIngPricePerBox(''); setNewIngEditingPrice(false);
-                                                            }} className="bg-[#967D62] hover:bg-[#7A654E] text-white px-4">
-                                                                <Plus className="w-4 h-4" />
-                                                            </Button>
-                                                        </div>
+                                                                {/* Riga 4: Numero scatoloni + Qt ideale + bottone */}
+                                                                <div className="flex gap-2 items-end">
+                                                                    <div className="space-y-1">
+                                                                        <Label className={`text-xs ${mutedText}`}>N° scatoloni</Label>
+                                                                        <Input type="number" placeholder="Es. 3" value={newIngBoxCount} onChange={e => setNewIngBoxCount(e.target.value)} className={`w-24 ${isDinner ? 'border-[#334155] bg-[#1E293B]' : 'border-[#EAE5DA]'}`} />
+                                                                    </div>
+                                                                    <div className="flex-1 space-y-1">
+                                                                        <Label className={`text-xs ${mutedText}`}>Quantità ideale</Label>
+                                                                        {(() => {
+                                                                            const isExisting = ingredients.some(i => i.name.toLowerCase() === newIngName.toLowerCase());
+                                                                            const existingIdeal = ingredients.find(i => i.name.toLowerCase() === newIngName.toLowerCase())?.idealQty;
+                                                                            if (isExisting && !newIngEditingIdeal) {
+                                                                                return (
+                                                                                    <div className={`flex items-center gap-2 h-9 px-3 rounded-md border ${isDinner ? 'border-[#334155] bg-[#1E293B]' : 'border-[#EAE5DA] bg-gray-100'}`}>
+                                                                                        <span className={`flex-1 text-sm ${mutedText}`}>{existingIdeal}{newIngUnit}</span>
+                                                                                        <button onClick={() => { setNewIngEditingIdeal(true); setNewIngIdeal(String(existingIdeal)); }} className={`${mutedText} hover:text-[#967D62] transition-colors`}><Pencil className="w-3.5 h-3.5" /></button>
+                                                                                    </div>
+                                                                                );
+                                                                            }
+                                                                            return <Input type="number" placeholder="Es. 5000" value={newIngIdeal} onChange={e => setNewIngIdeal(e.target.value)} className={isDinner ? 'border-[#334155] bg-[#1E293B]' : 'border-[#EAE5DA]'} />;
+                                                                        })()}
+                                                                    </div>
+                                                                    <Button onClick={() => {
+                                                                        const qtyPerBox = newIngSupplierMode === 'existing' && selectedSupplierData ? selectedSupplierData.qtyPerBox : Number(newIngQtyPerBox);
+                                                                        const boxes = Number(newIngBoxCount);
+                                                                        const supplierName = newIngSupplierMode === 'existing' ? newIngSelectedSupplier : newIngSupplierName;
+                                                                        const effectivePricePerBox = newIngSupplierMode === 'existing' && !newIngEditingPrice && selectedSupplierData
+                                                                            ? selectedSupplierData.pricePerBox
+                                                                            : Number(newIngPricePerBox);
+                                                                        const isExistingIng = ingredients.some(i => i.name.toLowerCase() === newIngName.toLowerCase());
+                                                                        const effectiveIdeal = isExistingIng && !newIngEditingIdeal
+                                                                            ? String(ingredients.find(i => i.name.toLowerCase() === newIngName.toLowerCase())?.idealQty || '')
+                                                                            : newIngIdeal;
+                                                                        if (!newIngName || !effectiveIdeal || !boxes || !qtyPerBox || !supplierName || !effectivePricePerBox) return;
+                                                                        const existingIngForConv = ingredients.find(i => i.name.toLowerCase() === newIngName.toLowerCase());
+                                                                        const origUnit = existingIngForConv?.unit || newIngUnit;
+                                                                        const wg = ['g','kg']; const lq = ['ml','l','cl'];
+                                                                        const incompatible = existingIngForConv && (
+                                                                            (isPieceUnit(origUnit) && !isPieceUnit(newIngUnit)) ||
+                                                                            (!isPieceUnit(origUnit) && isPieceUnit(newIngUnit)) ||
+                                                                            (wg.includes(origUnit) && lq.includes(newIngUnit)) ||
+                                                                            (lq.includes(origUnit) && wg.includes(newIngUnit))
+                                                                        );
+                                                                        if (incompatible) return;
+                                                                        const rawQty = qtyPerBox * boxes;
+                                                                        const supplierUnit = newIngSupplierMode === 'existing' && selectedSupplierData?.unit ? selectedSupplierData.unit : newIngUnit;
+                                                                        const converted = existingIngForConv ? convertToUnit(rawQty, supplierUnit, origUnit) : rawQty;
+                                                                        const totalQty = converted !== null ? converted : rawQty;
+                                                                        const existingIdx = ingredients.findIndex(i => i.name.toLowerCase() === newIngName.toLowerCase());
+                                                                        const pricePerBaseUnit = qtyPerBox > 0 ? effectivePricePerBox / qtyPerBox : 0;
+                                                                        const purchaseRecord = { qty: totalQty, pricePerUnit: pricePerBaseUnit, date: new Date().toISOString().split('T')[0], supplierName };
+                                                                        if (existingIdx >= 0) {
+                                                                            setIngredients(prev => prev.map((ing, idx) => {
+                                                                                if (idx !== existingIdx) return ing;
+                                                                                const updatedSuppliers = ing.suppliers || [];
+                                                                                const supIdx = updatedSuppliers.findIndex(s => s.name === supplierName);
+                                                                                const newSuppliers = supIdx >= 0
+                                                                                    ? updatedSuppliers.map(s => s.name === supplierName ? { ...s, pricePerBox: effectivePricePerBox } : s)
+                                                                                    : [...updatedSuppliers, { name: supplierName, qtyPerBox, pricePerBox: effectivePricePerBox, unit: newIngUnit }];
+                                                                                const updatedIdeal = newIngEditingIdeal && newIngIdeal ? Number(newIngIdeal) : Number(effectiveIdeal) || ing.idealQty;
+                                                                                return { ...ing, currentQty: ing.currentQty + totalQty, idealQty: updatedIdeal, suppliers: newSuppliers, purchaseHistory: [...(ing.purchaseHistory || []), purchaseRecord] };
+                                                                            }));
+                                                                        } else {
+                                                                            const id = Date.now().toString();
+                                                                            setIngredients(prev => [...prev, { id, name: newIngName, unit: newIngUnit, idealQty: Number(effectiveIdeal), currentQty: totalQty, suppliers: [{ name: supplierName, qtyPerBox, pricePerBox: effectivePricePerBox, unit: newIngUnit }], purchaseHistory: [purchaseRecord] }]);
+                                                                        }
+                                                                        setNewIngName(''); setNewIngIdeal(''); setNewIngSupplierName(''); setNewIngQtyPerBox(''); setNewIngBoxCount(''); setNewIngSelectedSupplier(''); setNewIngSupplierMode('new'); setNewIngEditingIdeal(false); setNewIngPricePerBox(''); setNewIngEditingPrice(false);
+                                                                    }} className="bg-[#967D62] hover:bg-[#7A654E] text-white px-4">
+                                                                        <Plus className="w-4 h-4" />
+                                                                    </Button>
+                                                                </div>
+                                                            </>
+                                                        )}
                                                     </div>
                                                 );
                                             })()}
                                         </div>
 
-                                        {/* Lista ingredienti */}
-                                        {ingredients.length === 0 ? (
+                                        {/* Lista ingredienti + preparazioni */}
+                                        {ingredients.length === 0 && preparations.length === 0 ? (
                                             <p className={`text-sm text-center py-4 ${mutedText}`}>Nessun ingrediente inserito.</p>
                                         ) : (
                                             <div className="space-y-2 max-h-80 overflow-y-auto">
+                                                {/* Ingredienti acquistati */}
                                                 {ingredients.map(ing => {
                                                     const pct = ing.idealQty > 0 ? (ing.currentQty / ing.idealQty) * 100 : 100;
                                                     const color = pct > 50 ? 'bg-emerald-500' : pct > 20 ? 'bg-amber-500' : 'bg-red-500';
@@ -420,6 +494,39 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                                                         </div>
                                                     );
                                                 })}
+                                                {/* Preparazioni interne */}
+                                                {preparations.length > 0 && (
+                                                    <>
+                                                        <p className={`text-[10px] font-bold uppercase tracking-wider pt-1 ${mutedText}`}>Preparazioni</p>
+                                                        {preparations.map(prep => {
+                                                            const pct = prep.idealQty > 0 ? (prep.currentQty / prep.idealQty) * 100 : 100;
+                                                            const color = pct > 50 ? 'bg-emerald-500' : pct > 20 ? 'bg-amber-500' : 'bg-red-500';
+                                                            return (
+                                                                <div key={prep.id} className={`p-3 rounded-lg border ${isDinner ? 'bg-[#0F172A] border-[#334155]/60' : 'bg-[#967D62]/5 border-[#967D62]/20'}`}>
+                                                                    <div className="flex justify-between items-center mb-1">
+                                                                        <div className="flex items-center gap-1.5">
+                                                                            <CookingPot className={`w-3.5 h-3.5 text-[#967D62]`} />
+                                                                            <span className={`font-semibold text-sm ${textColor}`}>{prep.name}</span>
+                                                                        </div>
+                                                                        <div className="flex items-center gap-2">
+                                                                            {prep.idealQty > 0 ? (
+                                                                                <span className={`text-sm font-mono ${pct < 20 ? 'text-red-500' : pct < 50 ? 'text-amber-500' : 'text-emerald-500'}`}>{prep.currentQty}{prep.yieldUnit} / {prep.idealQty}{prep.yieldUnit}</span>
+                                                                            ) : (
+                                                                                <span className={`text-sm font-mono ${mutedText}`}>{prep.currentQty}{prep.yieldUnit}</span>
+                                                                            )}
+                                                                            <button onClick={() => setPlanTab('preparazioni')} className={`${mutedText} hover:text-[#967D62]`} title="Vai a Preparazioni"><CookingPot className="w-3.5 h-3.5" /></button>
+                                                                        </div>
+                                                                    </div>
+                                                                    {prep.idealQty > 0 && (
+                                                                        <div className={`w-full h-1.5 rounded-full ${isDinner ? 'bg-[#334155]' : 'bg-gray-200'}`}>
+                                                                            <div className={`h-1.5 rounded-full transition-all ${color}`} style={{ width: `${Math.min(100, pct)}%` }} />
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </>
+                                                )}
                                             </div>
                                         )}
 
@@ -690,12 +797,30 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                                                     {['g', 'kg', 'ml', 'l', 'pz', 'cl'].map(u => <option key={u} value={u}>{u}</option>)}
                                                 </select>
                                             </div>
+                                            {/* Quantità ideale in magazzino */}
+                                            <div className="space-y-1">
+                                                <Label className={`text-xs ${mutedText}`}>Quantità ideale in magazzino ({newPrepYieldUnit})</Label>
+                                                {(() => {
+                                                    const existingPrep = editingPrepId ? preparations.find(pr => pr.id === editingPrepId) : null;
+                                                    const hasIdeal = existingPrep && existingPrep.idealQty > 0;
+                                                    if (hasIdeal && !newPrepEditingIdeal) {
+                                                        return (
+                                                            <div className={`flex items-center gap-2 h-9 px-3 rounded-md border ${isDinner ? 'border-[#334155] bg-[#1E293B]' : 'border-[#EAE5DA] bg-gray-100'}`}>
+                                                                <span className={`flex-1 text-sm ${mutedText}`}>{existingPrep.idealQty}{existingPrep.yieldUnit}</span>
+                                                                <button onClick={() => { setNewPrepEditingIdeal(true); setNewPrepIdealQty(String(existingPrep.idealQty)); }} className={`${mutedText} hover:text-[#967D62] transition-colors`}><Pencil className="w-3.5 h-3.5" /></button>
+                                                            </div>
+                                                        );
+                                                    }
+                                                    return <Input type="number" placeholder="Es. 1000" value={newPrepIdealQty} onChange={e => setNewPrepIdealQty(e.target.value)} className={isDinner ? 'border-[#334155] bg-[#1E293B]' : 'border-[#EAE5DA]'} />;
+                                                })()}
+                                            </div>
                                             <Button
                                                 onClick={() => {
                                                     if (!newPrepName || !newPrepYieldQty) return;
+                                                    const idealVal = newPrepEditingIdeal && newPrepIdealQty ? Number(newPrepIdealQty) : (newPrepIdealQty ? Number(newPrepIdealQty) : 0);
                                                     if (editingPrepId) {
                                                         setPreparations(prev => prev.map(p => p.id === editingPrepId
-                                                            ? { ...p, name: newPrepName, yieldQty: Number(newPrepYieldQty), yieldUnit: newPrepYieldUnit }
+                                                            ? { ...p, name: newPrepName, yieldQty: Number(newPrepYieldQty), yieldUnit: newPrepYieldUnit, ...(idealVal > 0 ? { idealQty: idealVal } : {}) }
                                                             : p));
                                                         setEditingPrepId(null);
                                                     } else {
@@ -704,10 +829,12 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                                                             name: newPrepName,
                                                             yieldQty: Number(newPrepYieldQty),
                                                             yieldUnit: newPrepYieldUnit,
+                                                            currentQty: 0,
+                                                            idealQty: idealVal,
                                                             ingredients: []
                                                         }]);
                                                     }
-                                                    setNewPrepName(''); setNewPrepYieldQty('');
+                                                    setNewPrepName(''); setNewPrepYieldQty(''); setNewPrepIdealQty(''); setNewPrepEditingIdeal(false);
                                                 }}
                                                 className="w-full bg-[#967D62] hover:bg-[#7A654E] text-white"
                                             >
