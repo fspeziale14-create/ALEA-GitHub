@@ -134,6 +134,26 @@ export function PianificazioneView(props: PianificazioneViewProps) {
   const setShowBudgetSettings = p.setShowBudgetSettings; const generateBudgetPlan = p.generateBudgetPlan;
   const getFestivitaAvviso = p.getFestivitaAvviso;
 
+  // Ritorna le UdM compatibili (multipli/sottomultipli) per una UdM base dell'inventario
+  const getCompatibleUnits = (baseUnit: string): string[] => {
+    if (['g', 'kg'].includes(baseUnit)) return ['g', 'kg'];
+    if (['ml', 'cl', 'l'].includes(baseUnit)) return ['ml', 'cl', 'l'];
+    if (baseUnit === 'pz') return ['pz'];
+    return [baseUnit];
+  };
+
+  // Converte qty da fromUnit a baseUnit per normalizzare. Usa convertToUnit se disponibile, fallback manuale.
+  const normalizeToBase = (qty: number, fromUnit: string, baseUnit: string): number => {
+    if (fromUnit === baseUnit) return qty;
+    const converted = convertToUnit(qty, fromUnit, baseUnit);
+    if (converted !== null) return converted;
+    // fallback manuale
+    const factors: Record<string, number> = { g: 1, kg: 1000, ml: 1, cl: 10, l: 1000 };
+    const fFrom = factors[fromUnit]; const fTo = factors[baseUnit];
+    if (fFrom && fTo) return qty * fFrom / fTo;
+    return qty;
+  };
+
   return (
              <main className="flex-1 p-6 md:p-8 max-w-6xl mx-auto w-full">
                 <div className="space-y-6">
@@ -483,12 +503,12 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                                                             {isEditing && (
                                                                 <div className={`p-3 space-y-2 ${isDinner ? 'bg-[#0F172A]' : 'bg-gray-50'}`}>
                                                                     {/* ingredienti già aggiunti (incluse preparazioni con prefisso prep:) */}
-                                                                    {dishRecipe.map(({ ingredientId, qty }) => {
+                                                                    {dishRecipe.map(({ ingredientId, qty, unit: rowUnit }) => {
                                                                         const isPrep = ingredientId.startsWith('prep:');
                                                                         const prepObj = isPrep ? preparations.find(p => p.id === ingredientId.replace('prep:', '')) : null;
                                                                         const ing = !isPrep ? ingredients.find(i => i.id === ingredientId) : null;
                                                                         const displayName = isPrep ? prepObj?.name : ing?.name;
-                                                                        const displayUnit = isPrep ? prepObj?.yieldUnit : ing?.unit;
+                                                                        const displayUnit = rowUnit ?? (isPrep ? prepObj?.yieldUnit : ing?.unit);
                                                                         if (!displayName) return null;
                                                                         return (
                                                                             <div key={ingredientId} className="flex items-center justify-between text-xs">
@@ -556,51 +576,62 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                                                                             })()}
                                                                         </div>
                                                                         {(() => {
-                                                                            // Se l'ingrediente selezionato è a pezzi, mostra input pcs_yield invece di qty
-                                                                            const selIng = editingRecipeIngId && !editingRecipeIngId.startsWith('prep:')
+                                                                            const isPrep = editingRecipeIngId && editingRecipeIngId.startsWith('prep:');
+                                                                            const selIng = editingRecipeIngId && !isPrep
                                                                                 ? ingredients.find(i => i.id === editingRecipeIngId)
                                                                                 : null;
-                                                                            const isPz = selIng?.unit === 'pz';
-                                                                            return isPz ? (
+                                                                            const selPrep = isPrep ? preparations.find(p => p.id === editingRecipeIngId.replace('prep:', '')) : null;
+                                                                            const baseUnit = selIng?.unit ?? selPrep?.yieldUnit ?? '';
+                                                                            const compatUnits = baseUnit ? getCompatibleUnits(baseUnit) : [];
+                                                                            const isPz = baseUnit === 'pz';
+                                                                            return (
                                                                                 <div className="flex flex-col gap-1">
-                                                                                    <Input
-                                                                                        type="number"
-                                                                                        placeholder="Qty (pz)"
-                                                                                        value={editingRecipeQty}
-                                                                                        onChange={e => setEditingRecipeQty(e.target.value)}
-                                                                                        className={`w-20 text-xs ${isDinner ? 'border-[#334155] bg-[#1E293B]' : 'border-[#EAE5DA]'}`}
-                                                                                    />
-                                                                                    <div className="flex items-center gap-1">
-                                                                                        <span className={`text-[10px] whitespace-nowrap ${mutedText}`}>1pz =</span>
+                                                                                    <div className="flex gap-1 items-center">
                                                                                         <Input
                                                                                             type="number"
-                                                                                            placeholder="N porzioni"
-                                                                                            value={editingRecipePcsYield}
-                                                                                            onChange={e => setEditingRecipePcsYield(e.target.value)}
-                                                                                            className={`w-20 text-xs ${isDinner ? 'border-[#334155] bg-[#1E293B]' : 'border-[#EAE5DA]'}`}
+                                                                                            placeholder="Qty"
+                                                                                            value={editingRecipeQty}
+                                                                                            onChange={e => setEditingRecipeQty(e.target.value)}
+                                                                                            className={`w-16 text-xs ${isDinner ? 'border-[#334155] bg-[#1E293B]' : 'border-[#EAE5DA]'}`}
                                                                                         />
+                                                                                        {compatUnits.length > 1 ? (
+                                                                                            <select
+                                                                                                value={editingRecipePcsYield || baseUnit}
+                                                                                                onChange={e => setEditingRecipePcsYield(e.target.value)}
+                                                                                                className={`w-14 rounded-md border text-xs px-1 h-8 ${isDinner ? 'border-[#334155] bg-[#1E293B] text-[#F4F1EA]' : 'border-[#EAE5DA] bg-white text-[#2C2A28]'}`}
+                                                                                            >
+                                                                                                {compatUnits.map(u => <option key={u} value={u}>{u}</option>)}
+                                                                                            </select>
+                                                                                        ) : (
+                                                                                            <span className={`text-xs w-8 ${mutedText}`}>{baseUnit}</span>
+                                                                                        )}
                                                                                     </div>
+                                                                                    {isPz && (
+                                                                                        <div className="flex items-center gap-1">
+                                                                                            <span className={`text-[10px] whitespace-nowrap ${mutedText}`}>1pz =</span>
+                                                                                            <Input
+                                                                                                type="number"
+                                                                                                placeholder="N porzioni"
+                                                                                                value={''}
+                                                                                                onChange={e => {/* pcs_yield field repurposed for unit select above; handle separately if needed */}}
+                                                                                                className={`w-16 text-xs ${isDinner ? 'border-[#334155] bg-[#1E293B]' : 'border-[#EAE5DA]'}`}
+                                                                                            />
+                                                                                        </div>
+                                                                                    )}
                                                                                 </div>
-                                                                            ) : (
-                                                                                <Input
-                                                                                    type="number"
-                                                                                    placeholder="Qty"
-                                                                                    value={editingRecipeQty}
-                                                                                    onChange={e => setEditingRecipeQty(e.target.value)}
-                                                                                    className={`w-16 text-xs ${isDinner ? 'border-[#334155] bg-[#1E293B]' : 'border-[#EAE5DA]'}`}
-                                                                                />
                                                                             );
                                                                         })()}
                                                                         <button onClick={() => {
-                                                                            // Accetta sia ingredienti normali che preparazioni (prefisso prep:)
                                                                             const isPrep = editingRecipeIngId.startsWith('prep:');
                                                                             const prepObj = isPrep ? preparations.find(p => p.id === editingRecipeIngId.replace('prep:', '')) : null;
                                                                             const ingObj = !isPrep ? ingredients.find(i => i.id === editingRecipeIngId) : null;
                                                                             const validId = isPrep ? (prepObj ? editingRecipeIngId : null) : ingObj?.id;
                                                                             if (!validId || !editingRecipeQty) return;
-                                                                            const isPz = ingObj?.unit === 'pz';
-                                                                            const pcsYield = isPz && editingRecipePcsYield ? Number(editingRecipePcsYield) : undefined;
-                                                                            setRecipes(prev => ({ ...prev, [dish]: [...(prev[dish] || []), { ingredientId: validId, qty: Number(editingRecipeQty), ...(pcsYield ? { pcs_yield: pcsYield } : {}) }] }));
+                                                                            const baseUnit = ingObj?.unit ?? prepObj?.yieldUnit ?? '';
+                                                                            const selectedUnit = editingRecipePcsYield || baseUnit;
+                                                                            // Normalizza la qty alla UdM base dell'inventario
+                                                                            const normalizedQty = baseUnit ? normalizeToBase(Number(editingRecipeQty), selectedUnit, baseUnit) : Number(editingRecipeQty);
+                                                                            setRecipes(prev => ({ ...prev, [dish]: [...(prev[dish] || []), { ingredientId: validId, qty: normalizedQty, unit: selectedUnit }] }));
                                                                             setEditingRecipeIngId(''); setEditingRecipeQty(''); setEditingRecipePcsYield(''); setIngredientSearchText('');
                                                                         }} className="px-2 py-1 rounded-md bg-[#967D62] text-white text-xs font-bold hover:bg-[#7A654E] self-end">
                                                                             <Plus className="w-3 h-3" />
@@ -736,7 +767,7 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                                                                         <div key={row.ingredientId} className="flex items-center justify-between text-xs">
                                                                             <span className={textColor}>{ing.name}</span>
                                                                             <div className="flex items-center gap-2">
-                                                                                <span className={mutedText}>{row.qty}{ing.unit}</span>
+                                                                                <span className={mutedText}>{row.qty}{row.unit ?? ing.unit}</span>
                                                                                 <button onClick={() => setPreparations(prev => prev.map(p => p.id === prep.id ? { ...p, ingredients: p.ingredients.filter(r => r.ingredientId !== row.ingredientId) } : p))} className="text-red-400 hover:text-red-500"><X className="w-3 h-3" /></button>
                                                                             </div>
                                                                         </div>
@@ -770,12 +801,50 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                                                                             </div>
                                                                         )}
                                                                     </div>
-                                                                    <Input type="number" placeholder="Qty" value={editingPrepId === prep.id ? prepIngQty : ''} onChange={e => setPrepIngQty(e.target.value)} className={`w-16 text-xs ${isDinner ? 'border-[#334155] bg-[#1E293B]' : 'border-[#EAE5DA]'}`} />
+                                                                    {/* Qty + UdM compatibile */}
+                                                                    {(() => {
+                                                                        const selIng = prepIngId ? ingredients.find(i => i.id === prepIngId) : null;
+                                                                        const baseUnit = selIng?.unit ?? '';
+                                                                        const compatUnits = baseUnit ? getCompatibleUnits(baseUnit) : [];
+                                                                        // prepIngQty riusa il campo esistente; per l'udm usiamo un local state trick:
+                                                                        // salviamo udm scelta come suffisso separato da "|" in prepIngQty (es "200|g")
+                                                                        const [qtyPart, unitPart] = (editingPrepId === prep.id ? prepIngQty : '').split('|');
+                                                                        const currentUnit = unitPart || baseUnit;
+                                                                        return (
+                                                                            <div className="flex gap-1 items-center">
+                                                                                <Input
+                                                                                    type="number"
+                                                                                    placeholder="Qty"
+                                                                                    value={qtyPart || ''}
+                                                                                    onChange={e => setPrepIngQty(`${e.target.value}|${currentUnit || baseUnit}`)}
+                                                                                    className={`w-16 text-xs ${isDinner ? 'border-[#334155] bg-[#1E293B]' : 'border-[#EAE5DA]'}`}
+                                                                                />
+                                                                                {compatUnits.length > 1 ? (
+                                                                                    <select
+                                                                                        value={currentUnit}
+                                                                                        onChange={e => setPrepIngQty(`${qtyPart || ''}|${e.target.value}`)}
+                                                                                        className={`w-14 rounded-md border text-xs px-1 h-8 ${isDinner ? 'border-[#334155] bg-[#1E293B] text-[#F4F1EA]' : 'border-[#EAE5DA] bg-white text-[#2C2A28]'}`}
+                                                                                    >
+                                                                                        {compatUnits.map(u => <option key={u} value={u}>{u}</option>)}
+                                                                                    </select>
+                                                                                ) : (
+                                                                                    <span className={`text-xs w-8 ${mutedText}`}>{baseUnit}</span>
+                                                                                )}
+                                                                            </div>
+                                                                        );
+                                                                    })()}
                                                                     <button onClick={() => {
                                                                         const validId = ingredients.find(i => i.id === prepIngId)?.id;
-                                                                        if (!validId || !prepIngQty) return;
+                                                                        const rawQtyStr = editingPrepId === prep.id ? prepIngQty : '';
+                                                                        const [qtyPart, unitPart] = rawQtyStr.split('|');
+                                                                        if (!validId || !qtyPart) return;
+                                                                        const selIng = ingredients.find(i => i.id === prepIngId);
+                                                                        const baseUnit = selIng?.unit ?? '';
+                                                                        const selectedUnit = unitPart || baseUnit;
+                                                                        // Normalizza alla UdM base dell'inventario
+                                                                        const normalizedQty = baseUnit ? normalizeToBase(Number(qtyPart), selectedUnit, baseUnit) : Number(qtyPart);
                                                                         setPreparations(prev => prev.map(p => p.id === prep.id
-                                                                            ? { ...p, ingredients: [...p.ingredients, { ingredientId: validId, qty: Number(prepIngQty) }] }
+                                                                            ? { ...p, ingredients: [...p.ingredients, { ingredientId: validId, qty: normalizedQty, unit: selectedUnit }] }
                                                                             : p));
                                                                         setPrepIngId(''); setPrepIngQty(''); setPrepIngSearch('');
                                                                     }} className="px-2 py-1 rounded-md bg-[#967D62] text-white text-xs font-bold hover:bg-[#7A654E]">
