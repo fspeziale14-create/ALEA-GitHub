@@ -61,11 +61,13 @@ export const calcWAC = (ing: Ingredient): number | null => {
 };
 
 // qty = quantità usata per porzione (nelle unità dell'ingrediente)
-// pcs_yield = solo per unit='pz': quante porzioni rende 1 pezzo IN QUESTO PIATTO
+// portionsPerPiece = solo per unit='pz'/'conf': quante porzioni rende 1 pezzo IN QUESTO PIATTO (può essere <1 se servono più pezzi per 1 porzione)
 interface RecipeRow {
   ingredientId: string;
   qty: number;
-  pcs_yield?: number;
+  unit?: string;
+  portionsPerPiece?: number;
+  pcs_yield?: number; // legacy, tenuto per retrocompatibilità
 }
 
 interface DishMargin {
@@ -95,10 +97,21 @@ const getIvaRate = (category: string): number => {
 };
 
 // ── CALCOLO COSTO INGREDIENTI PER PIATTO ─────────────────────────
+const isPieceUnit = (u: string) => u === 'pz' || u === 'conf';
+
+const toBaseQty = (qty: number, fromUnit: string, baseUnit: string): number => {
+  if (fromUnit === baseUnit) return qty;
+  const factors: Record<string, number> = { g: 1, kg: 1000, ml: 1, cl: 10, l: 1000 };
+  const fFrom = factors[fromUnit]; const fTo = factors[baseUnit];
+  if (fFrom && fTo) return qty * fFrom / fTo;
+  return qty;
+};
+
 const calcIngredientCost = (
   dishName: string,
   recipes: Record<string, RecipeRow[]>,
-  ingredients: Ingredient[]
+  ingredients: Ingredient[],
+  preparations: MenuProfitabilityProps['preparations']
 ): { cost: number; hasMissing: boolean } => {
   const rows = recipes[dishName] || [];
   if (rows.length === 0) return { cost: 0, hasMissing: true };
@@ -107,21 +120,59 @@ const calcIngredientCost = (
   let hasMissing = false;
 
   rows.forEach(row => {
+    const isPrep = row.ingredientId.startsWith('prep:');
+
+    if (isPrep) {
+      // ── Preparazione interna ──
+      const prepId = row.ingredientId.replace('prep:', '');
+      const prep = preparations.find(p => p.id === prepId);
+      if (!prep || prep.yieldQty <= 0) { hasMissing = true; return; }
+
+      // Costo totale di 1 batch della preparazione
+      let prepCost = 0;
+      let prepMissing = false;
+      prep.ingredients.forEach(prepRow => {
+        const ing = ingredients.find(i => i.id === prepRow.ingredientId);
+        if (!ing) { prepMissing = true; return; }
+        const ppu = calcWAC(ing);
+        if (ppu == null) { prepMissing = true; return; }
+        if (prepRow.portionsPerPiece && prepRow.portionsPerPiece > 0) {
+          prepCost += ppu / prepRow.portionsPerPiece;
+        } else {
+          const qtyInBase = toBaseQty(prepRow.qty, prepRow.unit ?? ing.unit, ing.unit);
+          prepCost += ppu * qtyInBase;
+        }
+      });
+      if (prepMissing) { hasMissing = true; return; }
+
+      // Costo per unità di resa (es. €/kg di preparazione)
+      const costPerYieldUnit = prepCost / prep.yieldQty;
+
+      // Quanto di questa preparazione usiamo in questo piatto
+      if (row.portionsPerPiece && row.portionsPerPiece > 0) {
+        total += costPerYieldUnit / row.portionsPerPiece;
+      } else {
+        const rowUnit = row.unit ?? prep.yieldUnit;
+        const qtyInBase = toBaseQty(row.qty, rowUnit, prep.yieldUnit);
+        total += costPerYieldUnit * qtyInBase;
+      }
+      return;
+    }
+
+    // ── Ingrediente normale ──
     const ing = ingredients.find(i => i.id === row.ingredientId);
     if (!ing) { hasMissing = true; return; }
 
-    // Calcola prezzo per unità base dell'ingrediente — WAC (costo medio ponderato)
     const pricePerUnit = calcWAC(ing);
-
     if (pricePerUnit == null) { hasMissing = true; return; }
 
-    if (ing.unit === 'pz') {
-      // Ingrediente a pezzi: la riga ha pcs_yield (porzioni rese da 1 pezzo in questo piatto)
-      const yield_ = row.pcs_yield ?? 1;
-      total += pricePerUnit / yield_;
+    const effectivePpp = row.portionsPerPiece ?? (row.pcs_yield ? row.pcs_yield : undefined);
+    if (isPieceUnit(ing.unit) && effectivePpp && effectivePpp > 0) {
+      total += pricePerUnit / effectivePpp;
     } else {
-      // Misurabile: qty è la quantità usata (nelle unità dell'ingrediente)
-      total += pricePerUnit * row.qty;
+      const rowUnit = row.unit ?? ing.unit;
+      const qtyInBase = toBaseQty(row.qty, rowUnit, ing.unit);
+      total += pricePerUnit * qtyInBase;
     }
   });
 
@@ -134,6 +185,7 @@ interface MenuProfitabilityProps {
   ingredients: Ingredient[];
   setIngredients: React.Dispatch<React.SetStateAction<Ingredient[]>>;
   recipes: Record<string, RecipeRow[]>;
+  preparations: Array<{ id: string; name: string; yieldQty: number; yieldUnit: string; ingredients: Array<{ ingredientId: string; qty: number; unit?: string; portionsPerPiece?: number }> }>;
   isDinner: boolean;
 }
 
@@ -145,6 +197,7 @@ export function MenuProfitability({
   ingredients,
   setIngredients,
   recipes,
+  preparations,
   isDinner,
 }: MenuProfitabilityProps) {
 
@@ -201,7 +254,7 @@ export function MenuProfitability({
         const priceGross = MENU_PRICES[name] ?? 0;
         const ivaRate    = getIvaRate(cat.name);
         const priceNet   = priceGross / (1 + ivaRate);
-        const { cost, hasMissing } = calcIngredientCost(name, recipes, ingredients);
+        const { cost, hasMissing } = calcIngredientCost(name, recipes, ingredients, preparations);
         const foodCostPct = priceNet > 0 && cost > 0 ? (cost / priceNet) * 100 : 0;
         const marginNet   = priceNet - cost;
         const marginPct   = priceNet > 0 ? (marginNet / priceNet) * 100 : 0;
@@ -492,33 +545,63 @@ export function MenuProfitability({
               <div className="space-y-2">
                 <div className={`text-xs font-semibold uppercase tracking-wider ${mutedText} mb-1`}>Ingredienti ricetta</div>
                 {dishRecipe.map(row => {
-                  const ing = ingredients.find(i => i.id === row.ingredientId);
-                  if (!ing) return null;
+                  const isPrep = row.ingredientId.startsWith('prep:');
+                  const prep = isPrep ? preparations.find(p => p.id === row.ingredientId.replace('prep:', '')) : null;
+                  const ing = !isPrep ? ingredients.find(i => i.id === row.ingredientId) : null;
+                  if (!ing && !prep) return null;
 
-                  const pricePerUnit = calcWAC(ing);
-                  const isManual = ing.manualPricePerUnit != null && ing.manualPricePerUnit > 0;
-                  const hasWAC = !isManual && ing.purchaseHistory && ing.purchaseHistory.length > 0;
+                  const displayName = isPrep ? prep!.name : ing!.name;
+                  const baseUnit = isPrep ? prep!.yieldUnit : ing!.unit;
+                  const pricePerUnit = isPrep ? null : calcWAC(ing!);
+                  const isManual = !isPrep && ing!.manualPricePerUnit != null && ing!.manualPricePerUnit > 0;
+                  const hasWAC = !isPrep && !isManual && ing!.purchaseHistory && ing!.purchaseHistory.length > 0;
+
+                  const effectivePpp = row.portionsPerPiece ?? (row.pcs_yield ? row.pcs_yield : undefined);
+                  const isPiece = isPieceUnit(baseUnit);
 
                   let costRow: number | null = null;
                   let qtyLabel = '';
-                  if (ing.unit === 'pz') {
-                    const yield_ = row.pcs_yield ?? 1;
-                    qtyLabel = `1 pz ÷ ${yield_} porzioni`;
-                    if (pricePerUnit != null) costRow = pricePerUnit / yield_;
+
+                  if (isPrep) {
+                    // Calcola costo prep per unità di resa
+                    let prepCost = 0; let prepMissing = false;
+                    prep!.ingredients.forEach(pr => {
+                      const pi = ingredients.find(i => i.id === pr.ingredientId);
+                      if (!pi) { prepMissing = true; return; }
+                      const ppu = calcWAC(pi);
+                      if (ppu == null) { prepMissing = true; return; }
+                      if (pr.portionsPerPiece && pr.portionsPerPiece > 0) { prepCost += ppu / pr.portionsPerPiece; }
+                      else { prepCost += ppu * toBaseQty(pr.qty, pr.unit ?? pi.unit, pi.unit); }
+                    });
+                    const cpyu = prepMissing ? null : prepCost / prep!.yieldQty;
+                    if (effectivePpp && effectivePpp > 0) {
+                      qtyLabel = effectivePpp >= 1 ? `1 ${baseUnit} → ${effectivePpp} porz.` : `${(1/effectivePpp).toFixed(2)} ${baseUnit} → 1 porz.`;
+                      if (cpyu != null) costRow = cpyu / effectivePpp;
+                    } else {
+                      const rowUnit = row.unit ?? baseUnit;
+                      const qtyInBase = toBaseQty(row.qty, rowUnit, baseUnit);
+                      qtyLabel = `${row.qty}${rowUnit}`;
+                      if (cpyu != null) costRow = cpyu * qtyInBase;
+                    }
+                  } else if (isPiece && effectivePpp && effectivePpp > 0) {
+                    qtyLabel = effectivePpp >= 1 ? `1 ${baseUnit} → ${effectivePpp} porz.` : `${(1/effectivePpp).toFixed(2)} ${baseUnit} → 1 porz.`;
+                    if (pricePerUnit != null) costRow = pricePerUnit / effectivePpp;
                   } else {
-                    qtyLabel = `${row.qty} ${ing.unit}`;
-                    if (pricePerUnit != null) costRow = pricePerUnit * row.qty;
+                    const rowUnit = row.unit ?? baseUnit;
+                    qtyLabel = `${row.qty}${rowUnit}`;
+                    if (pricePerUnit != null) costRow = pricePerUnit * toBaseQty(row.qty, rowUnit, baseUnit);
                   }
 
-                  const isEditing = editingIngId === ing.id;
+                  const isEditing = !isPrep && editingIngId === ing!.id;
 
                   return (
-                    <div key={ing.id} className={`flex items-center gap-3 p-2.5 rounded-lg border ${isDinner ? 'bg-[#1E293B] border-[#334155]' : 'bg-white border-[#EAE5DA]'}`}>
+                    <div key={row.ingredientId} className={`flex items-center gap-3 p-2.5 rounded-lg border ${isDinner ? 'bg-[#1E293B] border-[#334155]' : 'bg-white border-[#EAE5DA]'}`}>
                       <div className="flex-1 min-w-0">
-                        <span className={`text-sm font-medium ${textColor}`}>{ing.name}</span>
+                        <span className={`text-sm font-medium ${textColor}`}>{displayName}</span>
+                        {isPrep && <span className={`ml-1 text-[10px] text-[#967D62]`}>(prep.)</span>}
                         <span className={`ml-2 text-xs ${mutedText}`}>{qtyLabel}</span>
                       </div>
-                      {/* Prezzo per unità: editabile inline */}
+                      {/* Prezzo per unità: editabile inline solo per ingredienti normali */}
                       <div className="flex items-center gap-2 shrink-0">
                         {isEditing ? (
                           <div className="flex items-center gap-1">
@@ -530,7 +613,7 @@ export function MenuProfitability({
                               onChange={e => setEditingPrice(e.target.value)}
                               className={`w-24 h-7 text-xs ${inputCls}`}
                               autoFocus
-                              onKeyDown={e => { if (e.key === 'Enter') saveManualPrice(ing.id); if (e.key === 'Escape') setEditingIngId(null); }}
+                              onKeyDown={e => { if (e.key === 'Enter') saveManualPrice(ing!.id); if (e.key === 'Escape') setEditingIngId(null); }}
                             />
                             <span className={`text-xs ${mutedText}`}>{ing.unit}</span>
                             <button onClick={() => saveManualPrice(ing.id)} className="text-emerald-500 hover:text-emerald-400"><Check className="w-4 h-4" /></button>
@@ -538,21 +621,23 @@ export function MenuProfitability({
                           </div>
                         ) : (
                           <div className="flex items-center gap-2">
-                            {pricePerUnit != null ? (
-                              <span className={`text-xs font-mono ${mutedText}`}>€{pricePerUnit.toFixed(4)}/{ing.unit}</span>
+                            {isPrep ? (
+                              <span className={`text-xs font-mono ${mutedText}`}>costo calcolato</span>
+                            ) : pricePerUnit != null ? (
+                              <span className={`text-xs font-mono ${mutedText}`}>€{pricePerUnit.toFixed(4)}/{ing!.unit}</span>
                             ) : (
                               <span className="flex items-center gap-1 text-xs text-amber-500">
                                 <AlertCircle className="w-3 h-3" /> prezzo mancante
                               </span>
                             )}
                             {isManual && <span className={`text-[10px] px-1.5 py-0.5 rounded ${isDinner ? 'bg-[#967D62]/20 text-[#967D62]' : 'bg-[#967D62]/10 text-[#967D62]'}`}>manuale</span>}
-                            {hasWAC && <span className={`text-[10px] px-1.5 py-0.5 rounded ${isDinner ? 'bg-blue-500/15 text-blue-400' : 'bg-blue-50 text-blue-600'}`}>WAC ({ing.purchaseHistory!.length} carichi)</span>}
-                            <button
-                              onClick={e => { e.stopPropagation(); setEditingIngId(ing.id); setEditingPrice(String(pricePerUnit ?? '')); }}
+                            {hasWAC && <span className={`text-[10px] px-1.5 py-0.5 rounded ${isDinner ? 'bg-blue-500/15 text-blue-400' : 'bg-blue-50 text-blue-600'}`}>WAC ({ing!.purchaseHistory!.length} carichi)</span>}
+                            {!isPrep && <button
+                              onClick={e => { e.stopPropagation(); setEditingIngId(ing!.id); setEditingPrice(String(pricePerUnit ?? '')); }}
                               className={`${mutedText} hover:${accent} transition-colors`}
                             >
                               <Pencil className="w-3.5 h-3.5" />
-                            </button>
+                            </button>}
                           </div>
                         )}
                         {costRow != null && (
