@@ -10,7 +10,8 @@ import {
   LogOut,
   UserCircle,
   ArrowRightCircle,
-  PiggyBank
+  Star,
+  UtensilsCrossed,
 } from "lucide-react"
 
 
@@ -34,7 +35,8 @@ import {
 const gestionaleItems = [
   { title: "Dashboard", url: "#", icon: LayoutDashboard },
   { title: "Pianificazione", url: "#", icon: CalendarRange },
-  { title: "Redditività Menu", url: "#", icon: PiggyBank },
+  { title: "Menu", url: "#", icon: UtensilsCrossed },
+  { title: "Recensioni", url: "#", icon: Star },
   { title: "Impostazioni", url: "#", icon: Settings },
 ]
 
@@ -146,8 +148,9 @@ export function DashboardSidebar({ pastShiftsStatus = [], selectedDate, onSelect
             }}
             classNames={{
               head_cell: "w-8 text-xs text-muted-foreground",
-              cell: "h-8 w-8 text-center text-sm p-0 [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
-              day: "relative h-8 w-8 p-0 font-normal aria-selected:opacity-100 hover:bg-accent hover:text-accent-foreground rounded-md",
+              cell: "h-8 w-8 text-center text-sm p-0 focus-within:relative focus-within:z-20",
+              day: "relative h-8 w-8 p-0 font-normal aria-selected:opacity-100 hover:bg-accent hover:text-accent-foreground rounded-lg",
+              day_selected: "!rounded-lg !bg-[#967D62] !text-white hover:!bg-[#7A654E] hover:!text-white focus:!bg-[#967D62] focus:!text-white",
               day_today: "font-semibold",
             }}
           />
