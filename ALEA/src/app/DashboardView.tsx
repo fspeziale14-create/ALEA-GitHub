@@ -25,6 +25,8 @@ interface DashboardViewProps {
   formattedDate: string; mobileDate: string;
   isToday: boolean; isTargetShiftClosed: boolean; isShiftOngoing: boolean;
   isLockedByTime: boolean; isSaveDisabled: boolean; currentShiftSaved: boolean;
+  isClosedEntry?: boolean;
+  currentShiftClosed?: boolean;
   // covers & booking
   actualCovers: string; setActualCovers: (v: string) => void;
   finalBooked: string; setFinalBooked: (v: string) => void;
@@ -70,6 +72,8 @@ export function DashboardView(props: DashboardViewProps) {
     isLockedByTime = false,
     isSaveDisabled = true,
     currentShiftSaved = false,
+    isClosedEntry = false,
+    currentShiftClosed = false,
     actualCovers = '', setActualCovers = () => {},
     finalBooked = '', setFinalBooked = () => {},
     predictedCovers = 0,
@@ -231,25 +235,34 @@ export function DashboardView(props: DashboardViewProps) {
                             <div className="flex flex-col sm:flex-row gap-3">
                                 <div className="flex-1 space-y-1">
                                     <Label className={`text-xs ${mutedText}`}>Coperti Totali Reali</Label>
-                                    <Input type="number" placeholder="Es. 145" value={actualCovers} onChange={(e) => setActualCovers(e.target.value)} disabled={currentShiftSaved} className={`h-9 bg-transparent ${isDinner ? 'border-[#475569] text-[#F4F1EA]' : 'border-[#EAE5DA] text-[#2C2A28]'}`} />
+                                    <Input type="text" placeholder="Es. 145" value={actualCovers} onChange={(e) => setActualCovers(e.target.value)} disabled={currentShiftSaved} className={`h-9 bg-transparent ${isDinner ? 'border-[#475569] text-[#F4F1EA]' : 'border-[#EAE5DA] text-[#2C2A28]'}`} />
                                 </div>
                                 <div className="flex-1 space-y-1">
                                     <Label className={`text-xs ${mutedText}`}>Prenotati Effettivi</Label>
                                     <div className="relative">
-                                        <Input type="number" placeholder="Senza No-Show" value={finalBooked} onChange={(e) => setFinalBooked(e.target.value)} disabled={currentShiftSaved} className={`h-9 bg-transparent pr-8 ${isDinner ? 'border-[#475569] text-[#F4F1EA]' : 'border-[#EAE5DA] text-[#2C2A28]'}`} />
+                                        <Input type="text" placeholder="Senza No-Show" value={finalBooked} onChange={(e) => setFinalBooked(e.target.value)} disabled={currentShiftSaved} className={`h-9 bg-transparent pr-8 ${isDinner ? 'border-[#475569] text-[#F4F1EA]' : 'border-[#EAE5DA] text-[#2C2A28]'}`} />
                                         <UsersRound className={`w-4 h-4 absolute right-2.5 top-2.5 ${mutedText} opacity-50`} />
                                     </div>
                                 </div>
                             </div>
+                            {isClosedEntry && !currentShiftSaved && (
+                                <p className={`text-xs font-medium text-center ${isDinner ? 'text-amber-400' : 'text-amber-600'}`}>
+                                    🔒 Turno segnato come chiuso — il giorno non verrà conteggiato nelle previsioni
+                                </p>
+                            )}
                             {currentShiftSaved ? (
-                                <div className={`flex justify-center items-center py-2 rounded-md ${isDinner ? 'bg-[#334155] text-[#967D62]' : 'bg-green-50 text-green-700'}`}>
-                                    <CheckCircle2 className="w-5 h-5 mr-2" />
-                                    <span className="font-semibold text-sm">Turno salvato correttamente nel database</span>
+                                <div className={`flex justify-center items-center py-2 rounded-md ${currentShiftClosed ? (isDinner ? 'bg-amber-900/30 text-amber-400' : 'bg-amber-50 text-amber-700') : (isDinner ? 'bg-[#334155] text-[#967D62]' : 'bg-green-50 text-green-700')}`}>
+                                    <CheckCircle2 className="w-5 h-5 mr-2 shrink-0" />
+                                    <span className="font-semibold text-sm">
+                                        {currentShiftClosed
+                                            ? 'Ristorante chiuso — turno registrato, nessun dato per l\'algoritmo'
+                                            : 'Turno salvato correttamente nel database'}
+                                    </span>
                                 </div>
                             ) : (
                                 <div className="space-y-1">
-                                    <Button onClick={handleCloseShift} disabled={isSaveDisabled} className={`w-full font-semibold transition-colors disabled:opacity-50 bg-[#967D62] hover:bg-[#7A654E] ${isDinner ? 'text-[#F4F1EA]' : 'text-white shadow-sm'}`}>
-                                        Salva Dati e Chiudi Turno
+                                    <Button onClick={handleCloseShift} disabled={isSaveDisabled} className={`w-full font-semibold transition-colors disabled:opacity-50 ${isClosedEntry ? 'bg-amber-700 hover:bg-amber-800' : 'bg-[#967D62] hover:bg-[#7A654E]'} ${isDinner ? 'text-[#F4F1EA]' : 'text-white shadow-sm'}`}>
+                                        {isClosedEntry ? '🔒 Ristorante chiuso — Salva e chiudi turno' : 'Salva Dati e Chiudi Turno'}
                                     </Button>
                                     {isLockedByTime && (<p className="text-center text-xs text-orange-500 font-medium">Impossibile salvare: Turno in corso o nel futuro.</p>)}
                                     {isLogicError && (<p className="text-center text-xs text-red-500 font-medium">Errore logico: I prenotati non possono superare i coperti totali.</p>)}
