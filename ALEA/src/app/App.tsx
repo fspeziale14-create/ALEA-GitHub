@@ -3,7 +3,7 @@ import { convocazione, convocazioneSettimanale, convocazioneCuochi, convocazione
 import { MENU_CATEGORIES, MENU_PRICES, BEVERAGE_COURSES, weekDaysOrdered, mapDays } from './constants';
 import { useState, useEffect } from 'react';
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
-import { Activity, Cloud, CloudRain, Users, TrendingUp, Sun, Moon, CalendarCheck, CheckCircle2, ClipboardCheck, UsersRound, Zap, CalendarDays, Clock, ChefHat, ConciergeBell, Plus, Trash2, AlertTriangle, PiggyBank, CalendarRange, Pencil, LayoutGrid, ArrowRightCircle, Utensils, Boxes, Loader2, Settings2, BookOpen, X, Check, XCircle, ChevronRight, Edit3, ChevronDown, ChevronUp, UserCog, CookingPot, ClipboardList } from 'lucide-react';
+import { Activity, Cloud, CloudRain, Users, TrendingUp, Sun, Moon, CalendarCheck, CheckCircle2, ClipboardCheck, UsersRound, Zap, CalendarDays, Clock, ChefHat, ConciergeBell, Plus, Trash2, AlertTriangle, PiggyBank, CalendarRange, Pencil, LayoutGrid, ArrowRightCircle, Utensils, Boxes, Loader2, Settings2, BookOpen, X, Check, XCircle, ChevronRight, Edit3, ChevronDown, ChevronUp, UserCog, CookingPot, ClipboardList, ArrowLeft, Star } from 'lucide-react';
 
 import { Button } from './components/ui/button';
 import { Input } from './components/ui/input';
@@ -129,6 +129,12 @@ function App() {
 
   // ====== NAVIGAZIONE ======
   const [activeView, setActiveView] = useState<string>("Dashboard");
+  const [menuSubView, setMenuSubView] = useState<'landing' | 'inventario' | 'ricette' | 'redditività'>('landing');
+
+  const handleViewChange = (view: string) => {
+    setActiveView(view);
+    if (view !== "Menu") setMenuSubView('landing');
+  };
   const [shift, setShift] = useState<ShiftType>('pranzo');
   const [bookedGuests, setBookedGuests] = useState<string>('');
   
@@ -222,11 +228,19 @@ function App() {
   const [prepIngQty, setPrepIngQty] = useState('');
   const [prepDropdownRect, setPrepDropdownRect] = useState<DOMRect | null>(null);
   const [prepBatchQty, setPrepBatchQty] = useState<Record<string, string>>({});
+  const [newPrepIdealQty, setNewPrepIdealQty] = useState('');
+  const [newPrepEditingIdeal, setNewPrepEditingIdeal] = useState(false);
 
   // ====== PRENOTAZIONI ======
   const [savedShifts, setSavedShifts] = useState<string[]>(() => {
       try {
           const stored = localStorage.getItem('alea_saved_shifts');
+          return stored ? JSON.parse(stored) : [];
+      } catch { return []; }
+  });
+  const [closedShifts, setClosedShifts] = useState<string[]>(() => {
+      try {
+          const stored = localStorage.getItem('alea_closed_shifts');
           return stored ? JSON.parse(stored) : [];
       } catch { return []; }
   });
@@ -604,21 +618,38 @@ function App() {
 
   // ====== HANDLERS ======
   const handleCloseShift = () => {
-    if (!actualCovers || !finalBooked) return;
+    const CLOSED_VALUES = ['-', '/'];
+    const isClosed =
+      CLOSED_VALUES.includes(actualCovers.trim()) &&
+      CLOSED_VALUES.includes(finalBooked.trim());
+
+    if (!isClosed && (!actualCovers || !finalBooked)) return;
+
     const shiftKey = `${selectedDate}-${shift}`;
     if (!savedShifts.includes(shiftKey)) setSavedShifts(prev => {
         const next = [...prev, shiftKey];
         try { localStorage.setItem('alea_saved_shifts', JSON.stringify(next)); } catch {}
         return next;
     });
-    // Salva nello storico per migliorare le previsioni future
-    const cp = shift === 'pranzo' ? parseInt(actualCovers) : 0;
-    const cc = shift === 'cena' ? parseInt(actualCovers) : 0;
-    const pp = shift === 'pranzo' ? parseInt(finalBooked) : 0;
-    const pc = shift === 'cena' ? parseInt(finalBooked) : 0;
-    try {
-        salvaVerificaServizio(selectedDate, cp, cc, pp, pc, weather.temp, weather.temp - 2, weather.precipitation_mm, weather.precipitation_mm);
-    } catch {}
+
+    if (isClosed) {
+      // Marca come chiuso in localStorage — nessun dato mandato all'algoritmo
+      if (!closedShifts.includes(shiftKey)) setClosedShifts(prev => {
+          const next = [...prev, shiftKey];
+          try { localStorage.setItem('alea_closed_shifts', JSON.stringify(next)); } catch {}
+          return next;
+      });
+    } else {
+      // Salva nello storico per migliorare le previsioni future
+      const cp = shift === 'pranzo' ? parseInt(actualCovers) : 0;
+      const cc = shift === 'cena' ? parseInt(actualCovers) : 0;
+      const pp = shift === 'pranzo' ? parseInt(finalBooked) : 0;
+      const pc = shift === 'cena' ? parseInt(finalBooked) : 0;
+      try {
+          salvaVerificaServizio(selectedDate, cp, cc, pp, pc, weather.temp, weather.temp - 2, weather.precipitation_mm, weather.precipitation_mm);
+      } catch {}
+    }
+
     setActualCovers('');
     setFinalBooked('');
   };
@@ -1038,9 +1069,25 @@ function App() {
   
   const actualC = parseInt(actualCovers || '0');
   const finalB = parseInt(finalBooked || '0');
-  const isLogicError = actualC > 0 && finalB > actualC;
-  const isSaveDisabled = !actualCovers || !finalBooked || isLockedByTime || isLogicError;
+
+  // Rilevamento "ristorante chiuso": entrambi i campi contengono - o /
+  const CLOSED_VALUES = ['-', '/'];
+  const isClosedEntry =
+    CLOSED_VALUES.includes(actualCovers.trim()) &&
+    CLOSED_VALUES.includes(finalBooked.trim());
+
+  // Caso misto: un campo ha simbolo e l'altro un valore numerico — non valido
+  const isMixedEntry =
+    (CLOSED_VALUES.includes(actualCovers.trim()) && !CLOSED_VALUES.includes(finalBooked.trim()) && finalBooked.trim() !== '') ||
+    (CLOSED_VALUES.includes(finalBooked.trim()) && !CLOSED_VALUES.includes(actualCovers.trim()) && actualCovers.trim() !== '');
+
+  const isLogicError = !isClosedEntry && !isMixedEntry && actualC > 0 && finalB > actualC;
+  const isSaveDisabled =
+    isMixedEntry ||
+    isLockedByTime ||
+    (!isClosedEntry && (!actualCovers || !finalBooked || isLogicError));
   const currentShiftSaved = savedShifts.includes(`${selectedDate}-${shift}`);
+  const currentShiftClosed = closedShifts.includes(`${selectedDate}-${shift}`);
 
   const currentShiftReservations = reservations.filter(r => r.date === selectedDate && r.shift === shift);
   const incomingReservations = currentShiftReservations.filter(r => !r.isSeated && !r.isOutOfBounds);
@@ -2003,7 +2050,7 @@ function App() {
   return (
     <div className={`w-full overflow-hidden ${bgColor} transition-colors duration-500 min-h-screen font-sans relative`}>
       <SidebarProvider defaultOpen={true}>
-        <DashboardSidebar activeView={activeView} onViewChange={setActiveView} pastShiftsStatus={pastShiftsStatus} selectedDate={selectedDate} onSelectDate={setSelectedDate} onLogout={() => { setAppRole(null); }} appRole={appRole} userEmail={userEmail} />
+        <DashboardSidebar activeView={activeView} onViewChange={handleViewChange} pastShiftsStatus={pastShiftsStatus} selectedDate={selectedDate} onSelectDate={setSelectedDate} onLogout={() => { setAppRole(null); }} appRole={appRole} userEmail={userEmail} />
         <SidebarInset className={`w-full overflow-x-hidden ${bgColor} transition-colors duration-500`}>
           
           {/* MODALE GESTIONE MENU */}
@@ -2065,7 +2112,7 @@ function App() {
             </div>
             
             <div className="flex items-center justify-end z-10">
-                {activeView !== "Pianificazione" && activeView !== "Gestione Sala" && (
+                {activeView !== "Gestione Sala" && (
                     <div className="flex items-center gap-1 sm:gap-2">
                         <div className={`flex items-center px-2 sm:px-4 py-1.5 rounded-lg border shadow-sm transition-colors ${isDinner ? 'bg-[#1E293B] border-[#334155] text-[#F4F1EA]' : 'bg-white border-[#EAE5DA] text-[#2C2A28]'}`}>
                             <CalendarDays className={`w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 sm:mr-2 ${accentColor}`} />
@@ -2124,7 +2171,9 @@ function App() {
               cardBg={cardBg} accentColor={accentColor} accentBg={accentBg}
               selectedDate={selectedDate}
               planTab={planTab} setPlanTab={setPlanTab}
-              weekGenerated={weekGenerated} isGeneratingStaff={isGeneratingStaff}
+              visibleTabs={['sala', 'cucina']}
+              hideTabBar
+              weekGenerated={weekGenerated} setWeekGenerated={setWeekGenerated} isGeneratingStaff={isGeneratingStaff}
               weeklyStaffData={weeklyStaffData} staffDateRange={staffDateRange}
               generateStaffPlan={generateStaffPlan}
               isGeneratingBudget={isGeneratingBudget} budgetGenerated={budgetGenerated}
@@ -2165,6 +2214,8 @@ function App() {
               prepIngQty={prepIngQty} setPrepIngQty={setPrepIngQty}
               prepDropdownRect={prepDropdownRect} setPrepDropdownRect={setPrepDropdownRect}
               prepBatchQty={prepBatchQty} setPrepBatchQty={setPrepBatchQty}
+              newPrepIdealQty={newPrepIdealQty} setNewPrepIdealQty={setNewPrepIdealQty}
+              newPrepEditingIdeal={newPrepEditingIdeal} setNewPrepEditingIdeal={setNewPrepEditingIdeal}
               convertToUnit={convertToUnit} isPieceUnit={isPieceUnit} isMeasuredUnit={isMeasuredUnit}
               setActiveView={setActiveView}
               getFestivitaAvviso={getFestivitaAvviso}
@@ -2181,6 +2232,7 @@ function App() {
               isToday={isToday} isTargetShiftClosed={isTargetShiftClosed}
               isShiftOngoing={isShiftOngoing} isLockedByTime={isLockedByTime}
               isSaveDisabled={isSaveDisabled} currentShiftSaved={currentShiftSaved}
+              isClosedEntry={isClosedEntry} currentShiftClosed={currentShiftClosed}
               actualCovers={actualCovers} setActualCovers={setActualCovers}
               finalBooked={finalBooked} setFinalBooked={setFinalBooked}
               predictedCovers={predictedCovers} bookedGuests={bookedGuests}
@@ -2224,15 +2276,239 @@ function App() {
             />
           )}
 
-          {/* ========== REDDITIVITÀ MENU ========== */}
-          {activeView === "Redditività Menu" && (
-            <MenuProfitability
-              ingredients={ingredients}
-              setIngredients={setIngredients}
-              recipes={recipes}
-              preparations={preparations}
-              isDinner={isDinner}
-            />
+          {/* ========== RECENSIONI (PLACEHOLDER) ========== */}
+          {activeView === "Recensioni" && (
+            <main className="flex-1 p-6 md:p-8 max-w-6xl mx-auto w-full">
+              <div className="space-y-6">
+                <div>
+                  <h1 className={`text-3xl font-bold tracking-tight ${textColor}`}>Recensioni</h1>
+                  <p className={`${mutedText} mt-1`}>Monitora e rispondi alle recensioni dei clienti.</p>
+                </div>
+                <div className={`flex flex-col items-center justify-center py-24 rounded-2xl border-2 border-dashed ${isDinner ? 'border-[#334155] text-[#94A3B8]' : 'border-[#EAE5DA] text-[#8C8A85]'}`}>
+                  <Star className="w-12 h-12 mb-4 opacity-30" />
+                  <p className="text-lg font-semibold opacity-50">Coming Soon</p>
+                  <p className="text-sm opacity-40 mt-1">La gestione recensioni sarà disponibile a breve.</p>
+                </div>
+              </div>
+            </main>
+          )}
+
+          {/* ========== MENU ========== */}
+          {activeView === "Menu" && menuSubView === 'landing' && (
+            <main className="flex-1 flex flex-col p-6 md:p-8 max-w-6xl mx-auto w-full">
+              <div>
+                <h1 className={`text-3xl font-bold tracking-tight ${textColor}`}>Menu</h1>
+                <p className={`${mutedText} mt-1`}>Gestisci magazzino, ricette e analisi della redditività.</p>
+              </div>
+              <div className="flex-1 flex items-center">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full py-8">
+                  {[
+                    {
+                      key: 'inventario' as const,
+                      title: 'Inventario & Magazzino',
+                      description: 'Ingredienti, fornitori, scorte ideali e importazione inventario.',
+                      icon: Boxes,
+                    },
+                    {
+                      key: 'ricette' as const,
+                      title: 'Ricette',
+                      description: 'Gestisci le ricette dei piatti con ingredienti, dosi e preparazioni.',
+                      icon: BookOpen,
+                    },
+                    {
+                      key: 'redditività' as const,
+                      title: 'Redditività & Analisi',
+                      description: 'Analisi dei costi, margini di contribuzione e profittabilità del menu.',
+                      icon: PiggyBank,
+                    },
+                  ].map(({ key, title, description, icon: Icon }) => (
+                    <button
+                      key={key}
+                      onClick={() => setMenuSubView(key)}
+                      className={`group text-left p-8 rounded-2xl border transition-all duration-200 hover:shadow-xl hover:-translate-y-1 flex flex-col ${
+                        isDinner
+                          ? 'bg-[#1E293B] border-[#334155] hover:border-[#967D62]'
+                          : 'bg-[#FDFAF5] border-[#EAE5DA] hover:border-[#967D62] hover:bg-white'
+                      }`}
+                    >
+                      <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-6 transition-colors ${
+                        isDinner
+                          ? 'bg-[#967D62]/20 text-[#C4A882] group-hover:bg-[#967D62]/30'
+                          : 'bg-[#967D62]/10 text-[#967D62] group-hover:bg-[#967D62]/20'
+                      }`}>
+                        <Icon className="w-8 h-8" />
+                      </div>
+                      <h3 className={`font-bold text-xl mb-2 ${textColor}`}>{title}</h3>
+                      <p className={`text-sm leading-relaxed flex-1 ${mutedText}`}>{description}</p>
+                      <div className={`flex items-center gap-1.5 mt-6 text-sm font-semibold ${isDinner ? 'text-[#C4A882]' : 'text-[#967D62]'}`}>
+                        Apri <ChevronRight className="w-4 h-4" />
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </main>
+          )}
+
+          {/* ========== MENU / INVENTARIO ========== */}
+          {activeView === "Menu" && menuSubView === 'inventario' && (
+            <>
+              <div className={`flex items-center gap-3 px-6 pt-6 pb-2 max-w-6xl mx-auto w-full`}>
+                <button
+                  onClick={() => setMenuSubView('landing')}
+                  className={`flex items-center gap-1.5 text-sm font-semibold transition-colors ${isDinner ? 'text-[#C4A882] hover:text-[#F4F1EA]' : 'text-[#967D62] hover:text-[#2C2A28]'}`}
+                >
+                  <ArrowLeft className="w-4 h-4" /> Menu
+                </button>
+                <span className={`text-sm ${mutedText}`}>/</span>
+                <span className={`text-sm font-semibold ${textColor}`}>Inventario & Magazzino</span>
+              </div>
+              <PianificazioneView
+                isDinner={isDinner} textColor={textColor} mutedText={mutedText}
+                cardBg={cardBg} accentColor={accentColor} accentBg={accentBg}
+                selectedDate={selectedDate}
+                planTab="inventario" setPlanTab={() => {}}
+                hideTabBar hideHeader
+                weekGenerated={weekGenerated} setWeekGenerated={setWeekGenerated} isGeneratingStaff={isGeneratingStaff}
+                weeklyStaffData={weeklyStaffData} staffDateRange={staffDateRange}
+                generateStaffPlan={generateStaffPlan}
+                isGeneratingBudget={isGeneratingBudget} budgetGenerated={budgetGenerated}
+                budgetData={budgetData} budgetStartDate={budgetStartDate}
+                setBudgetStartDate={setBudgetStartDate} budgetDuration={budgetDuration}
+                setBudgetDuration={setBudgetDuration} showBudgetSettings={showBudgetSettings}
+                setShowBudgetSettings={setShowBudgetSettings} generateBudgetPlan={generateBudgetPlan}
+                ingredients={ingredients} setIngredients={setIngredients}
+                recipes={recipes} setRecipes={setRecipes}
+                preparations={preparations} setPreparations={setPreparations}
+                newIngName={newIngName} setNewIngName={setNewIngName}
+                newIngUnit={newIngUnit} setNewIngUnit={setNewIngUnit}
+                newIngIdeal={newIngIdeal} setNewIngIdeal={setNewIngIdeal}
+                newIngSupplierMode={newIngSupplierMode} setNewIngSupplierMode={setNewIngSupplierMode}
+                newIngSupplierName={newIngSupplierName} setNewIngSupplierName={setNewIngSupplierName}
+                newIngQtyPerBox={newIngQtyPerBox} setNewIngQtyPerBox={setNewIngQtyPerBox}
+                newIngBoxCount={newIngBoxCount} setNewIngBoxCount={setNewIngBoxCount}
+                newIngSelectedSupplier={newIngSelectedSupplier} setNewIngSelectedSupplier={setNewIngSelectedSupplier}
+                newIngEditingIdeal={newIngEditingIdeal} setNewIngEditingIdeal={setNewIngEditingIdeal}
+                newIngPricePerBox={newIngPricePerBox} setNewIngPricePerBox={setNewIngPricePerBox}
+                newIngEditingPrice={newIngEditingPrice} setNewIngEditingPrice={setNewIngEditingPrice}
+                editingRecipeDish={editingRecipeDish} setEditingRecipeDish={setEditingRecipeDish}
+                editingRecipeIngId={editingRecipeIngId} setEditingRecipeIngId={setEditingRecipeIngId}
+                editingRecipeQty={editingRecipeQty} setEditingRecipeQty={setEditingRecipeQty}
+                editingRecipePcsYield={editingRecipePcsYield} setEditingRecipePcsYield={setEditingRecipePcsYield}
+                ingredientSearchText={ingredientSearchText} setIngredientSearchText={setIngredientSearchText}
+                dropdownRect={dropdownRect} setDropdownRect={setDropdownRect}
+                showVerifyForm={showVerifyForm} setShowVerifyForm={setShowVerifyForm}
+                verifyValues={verifyValues} setVerifyValues={setVerifyValues}
+                importFeedback={importFeedback} setImportFeedback={setImportFeedback}
+                handleInventoryImport={handleInventoryImport}
+                newPrepName={newPrepName} setNewPrepName={setNewPrepName}
+                newPrepYieldQty={newPrepYieldQty} setNewPrepYieldQty={setNewPrepYieldQty}
+                newPrepYieldUnit={newPrepYieldUnit} setNewPrepYieldUnit={setNewPrepYieldUnit}
+                editingPrepId={editingPrepId} setEditingPrepId={setEditingPrepId}
+                prepIngSearch={prepIngSearch} setPrepIngSearch={setPrepIngSearch}
+                prepIngId={prepIngId} setPrepIngId={setPrepIngId}
+                prepIngQty={prepIngQty} setPrepIngQty={setPrepIngQty}
+                prepDropdownRect={prepDropdownRect} setPrepDropdownRect={setPrepDropdownRect}
+                prepBatchQty={prepBatchQty} setPrepBatchQty={setPrepBatchQty}
+              newPrepIdealQty={newPrepIdealQty} setNewPrepIdealQty={setNewPrepIdealQty}
+              newPrepEditingIdeal={newPrepEditingIdeal} setNewPrepEditingIdeal={setNewPrepEditingIdeal}
+                convertToUnit={convertToUnit} isPieceUnit={isPieceUnit} isMeasuredUnit={isMeasuredUnit}
+                setActiveView={setActiveView}
+                getFestivitaAvviso={getFestivitaAvviso}
+              />
+            </>
+          )}
+
+          {/* ========== MENU / RICETTE ========== */}
+          {activeView === "Menu" && menuSubView === 'ricette' && (
+            <>
+              <div className={`flex items-center gap-3 px-6 pt-6 pb-2 max-w-6xl mx-auto w-full`}>
+                <button
+                  onClick={() => setMenuSubView('landing')}
+                  className={`flex items-center gap-1.5 text-sm font-semibold transition-colors ${isDinner ? 'text-[#C4A882] hover:text-[#F4F1EA]' : 'text-[#967D62] hover:text-[#2C2A28]'}`}
+                >
+                  <ArrowLeft className="w-4 h-4" /> Menu
+                </button>
+                <span className={`text-sm ${mutedText}`}>/</span>
+                <span className={`text-sm font-semibold ${textColor}`}>Ricette</span>
+              </div>
+              <PianificazioneView
+                isDinner={isDinner} textColor={textColor} mutedText={mutedText}
+                cardBg={cardBg} accentColor={accentColor} accentBg={accentBg}
+                selectedDate={selectedDate}
+                planTab="ricette" setPlanTab={() => {}}
+                hideTabBar hideHeader
+                weekGenerated={weekGenerated} setWeekGenerated={setWeekGenerated} isGeneratingStaff={isGeneratingStaff}
+                weeklyStaffData={weeklyStaffData} staffDateRange={staffDateRange}
+                generateStaffPlan={generateStaffPlan}
+                isGeneratingBudget={isGeneratingBudget} budgetGenerated={budgetGenerated}
+                budgetData={budgetData} budgetStartDate={budgetStartDate}
+                setBudgetStartDate={setBudgetStartDate} budgetDuration={budgetDuration}
+                setBudgetDuration={setBudgetDuration} showBudgetSettings={showBudgetSettings}
+                setShowBudgetSettings={setShowBudgetSettings} generateBudgetPlan={generateBudgetPlan}
+                ingredients={ingredients} setIngredients={setIngredients}
+                recipes={recipes} setRecipes={setRecipes}
+                preparations={preparations} setPreparations={setPreparations}
+                newIngName={newIngName} setNewIngName={setNewIngName}
+                newIngUnit={newIngUnit} setNewIngUnit={setNewIngUnit}
+                newIngIdeal={newIngIdeal} setNewIngIdeal={setNewIngIdeal}
+                newIngSupplierMode={newIngSupplierMode} setNewIngSupplierMode={setNewIngSupplierMode}
+                newIngSupplierName={newIngSupplierName} setNewIngSupplierName={setNewIngSupplierName}
+                newIngQtyPerBox={newIngQtyPerBox} setNewIngQtyPerBox={setNewIngQtyPerBox}
+                newIngBoxCount={newIngBoxCount} setNewIngBoxCount={setNewIngBoxCount}
+                newIngSelectedSupplier={newIngSelectedSupplier} setNewIngSelectedSupplier={setNewIngSelectedSupplier}
+                newIngEditingIdeal={newIngEditingIdeal} setNewIngEditingIdeal={setNewIngEditingIdeal}
+                newIngPricePerBox={newIngPricePerBox} setNewIngPricePerBox={setNewIngPricePerBox}
+                newIngEditingPrice={newIngEditingPrice} setNewIngEditingPrice={setNewIngEditingPrice}
+                editingRecipeDish={editingRecipeDish} setEditingRecipeDish={setEditingRecipeDish}
+                editingRecipeIngId={editingRecipeIngId} setEditingRecipeIngId={setEditingRecipeIngId}
+                editingRecipeQty={editingRecipeQty} setEditingRecipeQty={setEditingRecipeQty}
+                editingRecipePcsYield={editingRecipePcsYield} setEditingRecipePcsYield={setEditingRecipePcsYield}
+                ingredientSearchText={ingredientSearchText} setIngredientSearchText={setIngredientSearchText}
+                dropdownRect={dropdownRect} setDropdownRect={setDropdownRect}
+                showVerifyForm={showVerifyForm} setShowVerifyForm={setShowVerifyForm}
+                verifyValues={verifyValues} setVerifyValues={setVerifyValues}
+                importFeedback={importFeedback} setImportFeedback={setImportFeedback}
+                handleInventoryImport={handleInventoryImport}
+                newPrepName={newPrepName} setNewPrepName={setNewPrepName}
+                newPrepYieldQty={newPrepYieldQty} setNewPrepYieldQty={setNewPrepYieldQty}
+                newPrepYieldUnit={newPrepYieldUnit} setNewPrepYieldUnit={setNewPrepYieldUnit}
+                editingPrepId={editingPrepId} setEditingPrepId={setEditingPrepId}
+                prepIngSearch={prepIngSearch} setPrepIngSearch={setPrepIngSearch}
+                prepIngId={prepIngId} setPrepIngId={setPrepIngId}
+                prepIngQty={prepIngQty} setPrepIngQty={setPrepIngQty}
+                prepDropdownRect={prepDropdownRect} setPrepDropdownRect={setPrepDropdownRect}
+                prepBatchQty={prepBatchQty} setPrepBatchQty={setPrepBatchQty}
+              newPrepIdealQty={newPrepIdealQty} setNewPrepIdealQty={setNewPrepIdealQty}
+              newPrepEditingIdeal={newPrepEditingIdeal} setNewPrepEditingIdeal={setNewPrepEditingIdeal}
+                convertToUnit={convertToUnit} isPieceUnit={isPieceUnit} isMeasuredUnit={isMeasuredUnit}
+                setActiveView={setActiveView}
+                getFestivitaAvviso={getFestivitaAvviso}
+              />
+            </>
+          )}
+
+          {/* ========== MENU / REDDITIVITÀ ========== */}
+          {activeView === "Menu" && menuSubView === 'redditività' && (
+            <>
+              <div className={`flex items-center gap-3 px-6 pt-6 pb-2 max-w-6xl mx-auto w-full`}>
+                <button
+                  onClick={() => setMenuSubView('landing')}
+                  className={`flex items-center gap-1.5 text-sm font-semibold transition-colors ${isDinner ? 'text-[#C4A882] hover:text-[#F4F1EA]' : 'text-[#967D62] hover:text-[#2C2A28]'}`}
+                >
+                  <ArrowLeft className="w-4 h-4" /> Menu
+                </button>
+                <span className={`text-sm ${mutedText}`}>/</span>
+                <span className={`text-sm font-semibold ${textColor}`}>Redditività & Analisi</span>
+              </div>
+              <MenuProfitability
+                ingredients={ingredients}
+                setIngredients={setIngredients}
+                recipes={recipes}
+                preparations={preparations}
+                isDinner={isDinner}
+              />
+            </>
           )}
 
         </SidebarInset>
