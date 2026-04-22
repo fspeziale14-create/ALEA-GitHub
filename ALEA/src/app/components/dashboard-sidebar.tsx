@@ -75,14 +75,14 @@ export function DashboardSidebar({ pastShiftsStatus = [], selectedDate, onSelect
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" className="mb-6 mt-4 h-auto hover:bg-transparent" asChild>
+            <SidebarMenuButton size="lg" className="mb-2 mt-1 h-auto hover:bg-transparent" asChild>
               <a href="#" className="flex items-center gap-4">
-                <div className="flex aspect-square size-12 items-center justify-center rounded-xl bg-[#F4F1EA] p-2 shrink-0 shadow-md border border-[#EAE5DA]">
+                <div className="flex aspect-square size-9 items-center justify-center rounded-xl bg-[#F4F1EA] p-1.5 shrink-0 shadow-md border border-[#EAE5DA]">
                   <img src="/alea-logo.jpeg" alt="Alea Logo" className="w-full h-full object-contain" />
                 </div>
                 <svg
                   viewBox="0 0 108 40"
-                  className="h-10 w-auto text-[#3E2723] dark:text-[#F4F1EA]"
+                  className="h-7 w-auto text-[#3E2723] dark:text-[#F4F1EA]"
                   fill="none"
                   stroke="currentColor"
                   strokeWidth="6"
@@ -131,13 +131,13 @@ export function DashboardSidebar({ pastShiftsStatus = [], selectedDate, onSelect
         <SidebarSeparator className="mx-0" />
       </SidebarContent>
 
-      <SidebarFooter className="p-2 space-y-2">
-        <div className="rounded-lg border bg-sidebar-accent/50 p-1">
+      <SidebarFooter className="p-2 space-y-1">
+        <div className="rounded-lg border bg-sidebar-accent/50 p-0.5">
           <Calendar
             mode="single"
             selected={currentDateObj}
             onSelect={handleDateSelect}
-            className="w-full flex justify-center p-2"
+            className="w-full flex justify-center p-1"
             modifiers={{
               missingOne: missingOneDates,
               missingBoth: missingBothDates
@@ -161,9 +161,9 @@ export function DashboardSidebar({ pastShiftsStatus = [], selectedDate, onSelect
         <SidebarMenu>
           {/* BOTTONE TORNA ALLA SELEZIONE RUOLO */}
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" onClick={onLogout} className="hover:bg-amber-50 dark:hover:bg-amber-950/30 transition-colors cursor-pointer">
-              <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-[#967D62]/10 text-[#967D62]">
-                <ArrowRightCircle className="size-5 rotate-180" />
+            <SidebarMenuButton size="sm" onClick={onLogout} className="hover:bg-amber-50 dark:hover:bg-amber-950/30 transition-colors cursor-pointer">
+              <div className="flex aspect-square size-7 items-center justify-center rounded-lg bg-[#967D62]/10 text-[#967D62]">
+                <ArrowRightCircle className="size-4 rotate-180" />
               </div>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-bold text-sm">Cambia Modalità</span>
@@ -174,9 +174,9 @@ export function DashboardSidebar({ pastShiftsStatus = [], selectedDate, onSelect
 
           {/* INFO UTENTE */}
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" className="cursor-default hover:bg-transparent">
-              <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-black/5 dark:bg-white/10 text-[#2C2A28] dark:text-[#F4F1EA]">
-                <UserCircle className="size-5" />
+            <SidebarMenuButton size="sm" className="cursor-default hover:bg-transparent">
+              <div className="flex aspect-square size-7 items-center justify-center rounded-lg bg-black/5 dark:bg-white/10 text-[#2C2A28] dark:text-[#F4F1EA]">
+                <UserCircle className="size-4" />
               </div>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-bold text-sm">Account</span>
