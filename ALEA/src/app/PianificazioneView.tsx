@@ -4,7 +4,7 @@ import {
   Users, CalendarRange, Boxes, ClipboardList, CookingPot,
   Plus, X, Check, Pencil, BookOpen, ChevronDown, ChevronUp, ChevronRight, ArrowLeft,
   Loader2, CalendarDays, LayoutGrid, CheckCircle2,
-  ChefHat, Moon, Settings2, Sun, TrendingUp
+  ChefHat, Moon, Settings2, Sun, TrendingUp, AlertCircle, Upload
 } from 'lucide-react';
 import { Button } from './components/ui/button';
 import { Input } from './components/ui/input';
@@ -209,6 +209,219 @@ export function PianificazioneView(props: PianificazioneViewProps) {
 
   // Arrotonda per difetto a 2 decimali (evita valori brutti tipo 0.99999)
   const floor2 = (n: number) => Math.floor(n * 100) / 100;
+
+  // ── REF per input file import ────────────────────────────────────
+  const ingImportRef = React.useRef<HTMLInputElement>(null);
+  const prepImportRef = React.useRef<HTMLInputElement>(null);
+  const recipeImportRef = React.useRef<HTMLInputElement>(null);
+
+  // Feedback separato per i tre import
+  const [ingImportMsg, setIngImportMsg] = React.useState<{ type: 'ok' | 'err' | 'warn'; msg: string } | null>(null);
+  const [prepImportMsg, setPrepImportMsg] = React.useState<{ type: 'ok' | 'err' | 'warn'; msg: string } | null>(null);
+  const [recipeImportMsg, setRecipeImportMsg] = React.useState<{ type: 'ok' | 'err' | 'warn'; msg: string } | null>(null);
+
+  // ── IMPORT INGREDIENTI ───────────────────────────────────────────
+  // Formato atteso: ingredienti.json — array di oggetti con campi:
+  // name, unit, idealQty, suppliers[{name, qtyPerBox, pricePerBox, unit}]
+  const handleIngImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const raw = ev.target?.result as string;
+        const data = JSON.parse(raw);
+        if (!Array.isArray(data)) throw new Error('Il file deve essere un array JSON.');
+        const VALID_UNITS = ['g', 'kg', 'ml', 'cl', 'l', 'pz', 'conf'];
+        let added = 0; let skipped = 0;
+        const newItems: any[] = [];
+        data.forEach((item: any, idx: number) => {
+          if (!item.name || typeof item.name !== 'string') { skipped++; return; }
+          const unit = item.unit && VALID_UNITS.includes(item.unit) ? item.unit : 'g';
+          const idealQty = typeof item.idealQty === 'number' ? item.idealQty : 0;
+          const suppliers = Array.isArray(item.suppliers)
+            ? item.suppliers.map((s: any) => ({
+                name: String(s.name ?? ''),
+                qtyPerBox: Number(s.qtyPerBox ?? 0),
+                pricePerBox: Number(s.pricePerBox ?? 0),
+                unit: VALID_UNITS.includes(s.unit) ? s.unit : unit,
+              })).filter((s: any) => s.name)
+            : [];
+          newItems.push({
+            id: `imp-${Date.now()}-${idx}`,
+            name: item.name.trim(),
+            unit,
+            idealQty,
+            currentQty: 0,
+            suppliers,
+            purchaseHistory: [],
+          });
+          added++;
+        });
+        if (added === 0) throw new Error('Nessun ingrediente valido trovato nel file.');
+        setIngredients((prev: any[]) => {
+          const existing = new Set(prev.map((i: any) => i.name.toLowerCase()));
+          const toAdd = newItems.filter(i => !existing.has(i.name.toLowerCase()));
+          const dupes = newItems.length - toAdd.length;
+          const msg = dupes > 0
+            ? `Importati ${toAdd.length} ingredienti. ${dupes} già presenti ignorati.${skipped ? ` ${skipped} voci non valide saltate.` : ''}`
+            : `Importati ${toAdd.length} ingredienti.${skipped ? ` ${skipped} voci non valide saltate.` : ''}`;
+          setIngImportMsg({ type: dupes > 0 || skipped > 0 ? 'warn' : 'ok', msg });
+          return [...prev, ...toAdd];
+        });
+      } catch (err: any) {
+        setIngImportMsg({ type: 'err', msg: `Errore: ${err.message}` });
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  // ── IMPORT PREPARAZIONI ──────────────────────────────────────────
+  // Formato atteso: preparazioni.json — array di oggetti con campi:
+  // name, yieldQty, yieldUnit, idealQty, ingredients[{ingredientName, qty, unit}]
+  const handlePrepImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const raw = ev.target?.result as string;
+        const data = JSON.parse(raw);
+        if (!Array.isArray(data)) throw new Error('Il file deve essere un array JSON.');
+        const VALID_UNITS = ['g', 'kg', 'ml', 'cl', 'l', 'pz', 'conf'];
+        let added = 0; let skipped = 0; let missingIngs: string[] = [];
+        const newPreps: any[] = [];
+        data.forEach((item: any, idx: number) => {
+          if (!item.name || typeof item.name !== 'string') { skipped++; return; }
+          const yieldQty = Number(item.yieldQty ?? 0);
+          const yieldUnit = VALID_UNITS.includes(item.yieldUnit) ? item.yieldUnit : 'g';
+          const idealQty = typeof item.idealQty === 'number' ? item.idealQty : 0;
+          const prepIngredients: any[] = [];
+          if (Array.isArray(item.ingredients)) {
+            item.ingredients.forEach((row: any) => {
+              const ingName = String(row.ingredientName ?? '').trim();
+              const ing = ingredients.find((i: any) => i.name.toLowerCase() === ingName.toLowerCase());
+              if (!ing) { missingIngs.push(ingName); return; }
+              const unit = VALID_UNITS.includes(row.unit) ? row.unit : ing.unit;
+              prepIngredients.push({
+                ingredientId: ing.id,
+                qty: Number(row.qty ?? 0),
+                unit,
+                ...(row.portionsPerPiece != null ? { portionsPerPiece: Number(row.portionsPerPiece) } : {}),
+              });
+            });
+          }
+          newPreps.push({
+            id: `prep-imp-${Date.now()}-${idx}`,
+            name: item.name.trim(),
+            yieldQty,
+            yieldUnit,
+            idealQty,
+            currentQty: 0,
+            ingredients: prepIngredients,
+          });
+          added++;
+        });
+        if (added === 0) throw new Error('Nessuna preparazione valida trovata nel file.');
+        setPreparations((prev: any[]) => {
+          const existing = new Set(prev.map((p: any) => p.name.toLowerCase()));
+          const toAdd = newPreps.filter(p => !existing.has(p.name.toLowerCase()));
+          const dupes = newPreps.length - toAdd.length;
+          const uniqueMissing = [...new Set(missingIngs)];
+          let msg = `Importate ${toAdd.length} preparazioni.`;
+          if (dupes > 0) msg += ` ${dupes} già presenti ignorate.`;
+          if (uniqueMissing.length > 0) msg += ` Ingredienti non trovati: ${uniqueMissing.slice(0, 5).join(', ')}${uniqueMissing.length > 5 ? '…' : ''}.`;
+          if (skipped > 0) msg += ` ${skipped} voci non valide saltate.`;
+          const type = dupes > 0 || uniqueMissing.length > 0 || skipped > 0 ? 'warn' : 'ok';
+          setPrepImportMsg({ type, msg });
+          return [...prev, ...toAdd];
+        });
+      } catch (err: any) {
+        setPrepImportMsg({ type: 'err', msg: `Errore: ${err.message}` });
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  // ── IMPORT RICETTE ───────────────────────────────────────────────
+  // Formato atteso: ricette.json — oggetto {nomePiatto: [{ingredientName, qty, unit, portionsPerPiece?}]}
+  // ingredientName può essere "prep:NomePreparazione" per usare una preparazione
+  const handleRecipeImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const raw = ev.target?.result as string;
+        const data = JSON.parse(raw);
+        if (typeof data !== 'object' || Array.isArray(data)) throw new Error('Il file deve essere un oggetto JSON con chiavi = nomi piatto.');
+        const VALID_UNITS = ['g', 'kg', 'ml', 'cl', 'l', 'pz', 'conf'];
+        let importedDishes = 0; let skippedRows = 0; let missingRefs: string[] = [];
+        const newRecipes: Record<string, any[]> = {};
+        Object.entries(data).forEach(([dishName, rows]: [string, any]) => {
+          if (!Array.isArray(rows)) return;
+          const recipeRows: any[] = [];
+          rows.forEach((row: any) => {
+            const refName = String(row.ingredientName ?? '').trim();
+            const isPrep = refName.startsWith('prep:');
+            const lookupName = isPrep ? refName.replace('prep:', '').trim() : refName;
+            let resolvedId: string | null = null;
+            if (isPrep) {
+              const prep = preparations.find((p: any) => p.name.toLowerCase() === lookupName.toLowerCase());
+              if (prep) resolvedId = `prep:${prep.id}`;
+            } else {
+              const ing = ingredients.find((i: any) => i.name.toLowerCase() === lookupName.toLowerCase());
+              if (ing) resolvedId = ing.id;
+            }
+            if (!resolvedId) { missingRefs.push(refName); skippedRows++; return; }
+            const unit = VALID_UNITS.includes(row.unit) ? row.unit : 'g';
+            recipeRows.push({
+              ingredientId: resolvedId,
+              qty: Number(row.qty ?? 0),
+              unit,
+              ...(row.portionsPerPiece != null ? { portionsPerPiece: Number(row.portionsPerPiece) } : {}),
+            });
+          });
+          if (recipeRows.length > 0) {
+            newRecipes[dishName] = recipeRows;
+            importedDishes++;
+          }
+        });
+        if (importedDishes === 0) throw new Error('Nessuna ricetta valida trovata nel file.');
+        setRecipes((prev: Record<string, any[]>) => {
+          const merged = { ...prev, ...newRecipes };
+          const uniqueMissing = [...new Set(missingRefs)];
+          let msg = `Importate ${importedDishes} ricette.`;
+          if (skippedRows > 0) msg += ` ${skippedRows} righe saltate (ingrediente/prep non trovato): ${uniqueMissing.slice(0, 4).join(', ')}${uniqueMissing.length > 4 ? '…' : ''}.`;
+          setRecipeImportMsg({ type: skippedRows > 0 ? 'warn' : 'ok', msg });
+          return merged;
+        });
+      } catch (err: any) {
+        setRecipeImportMsg({ type: 'err', msg: `Errore: ${err.message}` });
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  // Helper UI per i messaggi di feedback import
+  const ImportMsg = ({ msg }: { msg: { type: 'ok' | 'err' | 'warn'; msg: string } | null }) => {
+    if (!msg) return null;
+    const cls = msg.type === 'ok'
+      ? (isDinner ? 'bg-emerald-950/30 text-emerald-400 border-emerald-800/40' : 'bg-emerald-50 text-emerald-700 border-emerald-200')
+      : msg.type === 'err'
+      ? (isDinner ? 'bg-rose-950/30 text-rose-400 border-rose-800/40' : 'bg-rose-50 text-rose-700 border-rose-200')
+      : (isDinner ? 'bg-amber-950/30 text-amber-400 border-amber-800/40' : 'bg-amber-50 text-amber-700 border-amber-200');
+    const Icon = msg.type === 'ok' ? Check : msg.type === 'err' ? X : AlertCircle;
+    return (
+      <div className={`flex items-start gap-2 p-3 rounded-lg border text-xs font-medium ${cls}`}>
+        <Icon className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+        <span>{msg.msg}</span>
+      </div>
+    );
+  };
 
   return (
              <main className="flex-1 p-6 md:p-8 max-w-6xl mx-auto w-full">
@@ -507,24 +720,18 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                                             </div>
                                         )}
 
-                                        {/* Carica modulo dati */}
-                                        <div className="pt-3 mt-1 border-t border-black/5 dark:border-white/5">
-                                            {importFeedback && (
-                                                <div className={`mb-2 px-3 py-2 rounded-lg text-xs font-medium ${
-                                                    importFeedback.type === 'success' ? 'bg-green-50 text-green-700 dark:bg-green-950/30 dark:text-green-400' :
-                                                    importFeedback.type === 'error'   ? 'bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-400' :
-                                                    'bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400'
-                                                }`}>{importFeedback.msg}</div>
-                                            )}
-                                            <label className={`flex items-center justify-center gap-2 w-full px-3 py-2 rounded-lg border border-dashed cursor-pointer text-xs font-medium transition-colors ${isDinner ? 'border-[#334155] text-[#94A3B8] hover:bg-[#334155]/30' : 'border-[#D1C9BC] text-[#8C8A85] hover:bg-gray-50'}`}>
-                                                <Boxes className="w-3.5 h-3.5" />
-                                                Carica modulo dati
-                                                <span className={`text-[10px] ${mutedText}`}>(CSV, XLSX, XLS, TSV)</span>
-                                                <input type="file" accept=".csv,.xlsx,.xls,.tsv,.txt" onChange={handleInventoryImport} className="hidden" />
-                                            </label>
-                                            <p className={`text-[10px] mt-1.5 text-center ${mutedText}`}>
-                                                Il file deve avere colonne: <span className="font-mono">nome</span>, <span className="font-mono">quantità</span> (e opzionale <span className="font-mono">unità</span>).
-                                            </p>
+                                        {/* Import ingredienti da JSON */}
+                                        <div className="pt-3 mt-1 border-t border-black/5 dark:border-white/5 space-y-2">
+                                            <ImportMsg msg={ingImportMsg} />
+                                            <button
+                                                onClick={() => { setIngImportMsg(null); ingImportRef.current?.click(); }}
+                                                className={`flex items-center justify-center gap-2 w-full px-3 py-2.5 rounded-lg border border-dashed cursor-pointer text-xs font-medium transition-colors ${isDinner ? 'border-[#334155] text-[#94A3B8] hover:bg-[#334155]/30' : 'border-[#D1C9BC] text-[#8C8A85] hover:bg-gray-50'}`}
+                                            >
+                                                <Upload className="w-3.5 h-3.5" />
+                                                Importa ingredienti
+                                                <span className={`text-[10px] ${mutedText}`}>(ingredienti.json)</span>
+                                            </button>
+                                            <input ref={ingImportRef} type="file" accept=".json" onChange={handleIngImport} className="hidden" />
                                         </div>
                                     </CardContent>
                                 </Card>
@@ -732,6 +939,19 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                                                 })}
                                             </div>
                                         )}
+                                        {/* Import preparazioni da JSON */}
+                                        <div className="pt-3 mt-1 border-t border-black/5 dark:border-white/5 space-y-2">
+                                            <ImportMsg msg={prepImportMsg} />
+                                            <button
+                                                onClick={() => { setPrepImportMsg(null); prepImportRef.current?.click(); }}
+                                                className={`flex items-center justify-center gap-2 w-full px-3 py-2.5 rounded-lg border border-dashed cursor-pointer text-xs font-medium transition-colors ${isDinner ? 'border-[#334155] text-[#94A3B8] hover:bg-[#334155]/30' : 'border-[#D1C9BC] text-[#8C8A85] hover:bg-gray-50'}`}
+                                            >
+                                                <Upload className="w-3.5 h-3.5" />
+                                                Importa preparazioni
+                                                <span className={`text-[10px] ${mutedText}`}>(preparazioni.json)</span>
+                                            </button>
+                                            <input ref={prepImportRef} type="file" accept=".json" onChange={handlePrepImport} className="hidden" />
+                                        </div>
                                     </CardContent>
                                 </Card>
 
@@ -901,6 +1121,19 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                                             })}
                                         </div>
                                     )}
+                                    {/* Import ricette da JSON */}
+                                    <div className="pt-3 mt-1 border-t border-black/5 dark:border-white/5 space-y-2">
+                                        <ImportMsg msg={recipeImportMsg} />
+                                        <button
+                                            onClick={() => { setRecipeImportMsg(null); recipeImportRef.current?.click(); }}
+                                            className={`flex items-center justify-center gap-2 w-full px-3 py-2.5 rounded-lg border border-dashed cursor-pointer text-xs font-medium transition-colors ${isDinner ? 'border-[#334155] text-[#94A3B8] hover:bg-[#334155]/30' : 'border-[#D1C9BC] text-[#8C8A85] hover:bg-gray-50'}`}
+                                        >
+                                            <Upload className="w-3.5 h-3.5" />
+                                            Importa ricette
+                                            <span className={`text-[10px] ${mutedText}`}>(ricette.json)</span>
+                                        </button>
+                                        <input ref={recipeImportRef} type="file" accept=".json" onChange={handleRecipeImport} className="hidden" />
+                                    </div>
                                 </CardContent>
                             </Card>
                         </div>
@@ -1182,7 +1415,7 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                     )}
                 </div>
 
-                {/* ── Accesso secondario: card stile Menu ── */}
+                {/* -- Accesso secondario: card stile Menu -- */}
                 {planTab !== 'inventario' && planTab !== 'ricette' && (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-5 pt-2">
                     {/* Prenotazioni — disabilitata */}
