@@ -131,7 +131,7 @@ export function DashboardSidebar({ pastShiftsStatus = [], selectedDate, onSelect
         <SidebarSeparator className="mx-0" />
       </SidebarContent>
 
-      <SidebarFooter className="p-2 space-y-1">
+      <SidebarFooter className="p-2 space-y-2">
         <div className="rounded-lg border bg-sidebar-accent/50 p-0.5">
           <Calendar
             mode="single"
@@ -158,7 +158,7 @@ export function DashboardSidebar({ pastShiftsStatus = [], selectedDate, onSelect
 
         <SidebarSeparator className="mx-0" />
 
-        <SidebarMenu>
+        <SidebarMenu className="gap-2 flex flex-col">
           {/* BOTTONE TORNA ALLA SELEZIONE RUOLO */}
           <SidebarMenuItem>
             <SidebarMenuButton size="sm" onClick={onLogout} className="hover:bg-amber-50 dark:hover:bg-amber-950/30 transition-colors cursor-pointer">
