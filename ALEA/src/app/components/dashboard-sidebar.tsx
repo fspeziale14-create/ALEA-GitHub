@@ -161,8 +161,8 @@ export function DashboardSidebar({ pastShiftsStatus = [], selectedDate, onSelect
         <SidebarMenu className="gap-2 flex flex-col">
           {/* BOTTONE TORNA ALLA SELEZIONE RUOLO */}
           <SidebarMenuItem>
-            <SidebarMenuButton size="sm" onClick={onLogout} className="hover:bg-amber-50 dark:hover:bg-amber-950/30 transition-colors cursor-pointer">
-              <div className="flex aspect-square size-7 items-center justify-center rounded-lg bg-[#967D62]/10 text-[#967D62]">
+            <SidebarMenuButton size="lg" onClick={onLogout} className="hover:bg-amber-50 dark:hover:bg-amber-950/30 transition-colors cursor-pointer md:size-auto py-1.5 md:py-2">
+              <div className="flex aspect-square size-7 md:size-8 items-center justify-center rounded-lg bg-[#967D62]/10 text-[#967D62]">
                 <ArrowRightCircle className="size-4 rotate-180" />
               </div>
               <div className="grid flex-1 text-left text-sm leading-tight">
@@ -174,8 +174,8 @@ export function DashboardSidebar({ pastShiftsStatus = [], selectedDate, onSelect
 
           {/* INFO UTENTE */}
           <SidebarMenuItem>
-            <SidebarMenuButton size="sm" className="cursor-default hover:bg-transparent">
-              <div className="flex aspect-square size-7 items-center justify-center rounded-lg bg-black/5 dark:bg-white/10 text-[#2C2A28] dark:text-[#F4F1EA]">
+            <SidebarMenuButton size="lg" className="cursor-default hover:bg-transparent md:size-auto py-1.5 md:py-2">
+              <div className="flex aspect-square size-7 md:size-8 items-center justify-center rounded-lg bg-black/5 dark:bg-white/10 text-[#2C2A28] dark:text-[#F4F1EA]">
                 <UserCircle className="size-4" />
               </div>
               <div className="grid flex-1 text-left text-sm leading-tight">
