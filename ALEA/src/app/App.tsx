@@ -3,7 +3,7 @@ import { convocazione, convocazioneSettimanale, convocazioneCuochi, convocazione
 import { MENU_CATEGORIES, MENU_PRICES, BEVERAGE_COURSES, weekDaysOrdered, mapDays } from './constants';
 import { useState, useEffect } from 'react';
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
-import { Activity, Cloud, CloudRain, Users, TrendingUp, Sun, Moon, CalendarCheck, CheckCircle2, ClipboardCheck, UsersRound, Zap, CalendarDays, Clock, ChefHat, ConciergeBell, Plus, Trash2, AlertTriangle, PiggyBank, CalendarRange, Pencil, LayoutGrid, ArrowRightCircle, Utensils, Boxes, Loader2, Settings2, BookOpen, X, Check, XCircle, ChevronRight, Edit3, ChevronDown, ChevronUp, UserCog, CookingPot, ClipboardList, ArrowLeft, Star } from 'lucide-react';
+import { Activity, Cloud, CloudRain, Users, TrendingUp, Sun, Moon, CalendarCheck, CheckCircle2, ClipboardCheck, UsersRound, Zap, CalendarDays, Clock, ChefHat, ConciergeBell, Plus, Trash2, AlertTriangle, PiggyBank, CalendarRange, Pencil, LayoutGrid, ArrowRightCircle, Utensils, Boxes, Loader2, Settings2, BookOpen, X, Check, XCircle, ChevronRight, Edit3, ChevronDown, ChevronUp, UserCog, CookingPot, ClipboardList, ArrowLeft, Star, History, BarChart2, Target, TrendingDown, ArrowUp, ArrowDown, Minus } from 'lucide-react';
 
 import { Button } from './components/ui/button';
 import { Input } from './components/ui/input';
@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './com
 import { SidebarProvider, SidebarInset, SidebarTrigger } from './components/ui/sidebar';
 import { DashboardSidebar } from './components/dashboard-sidebar';
 import { MenuProfitability } from './components/menu-profitability';
+import { StoricoView } from './components/storico-view';
 import { DashboardView } from './DashboardView';
 import { PianificazioneView } from './PianificazioneView';
 import { ImpostazioniView } from './ImpostazioniView';
@@ -129,7 +130,7 @@ function App() {
 
   // ====== NAVIGAZIONE ======
   const [activeView, setActiveView] = useState<string>("Dashboard");
-  const [menuSubView, setMenuSubView] = useState<'landing' | 'inventario' | 'ricette' | 'redditività'>('landing');
+  const [menuSubView, setMenuSubView] = useState<'landing' | 'inventario' | 'ricette' | 'redditività' | 'storico'>('landing');
 
   const handleViewChange = (view: string) => {
     setActiveView(view);
@@ -2339,30 +2340,57 @@ function App() {
                 <p className={`${mutedText} mt-1`}>Gestisci magazzino, ricette e analisi della redditività.</p>
               </div>
               <div className="flex-1 flex items-center">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full py-8">
-                  {[
-                    {
-                      key: 'inventario' as const,
-                      title: 'Inventario & Magazzino',
-                      description: 'Ingredienti, fornitori, scorte ideali e importazione inventario.',
-                      icon: Boxes,
-                    },
-                    {
-                      key: 'ricette' as const,
-                      title: 'Ricette',
-                      description: 'Gestisci le ricette dei piatti con ingredienti, dosi e preparazioni.',
-                      icon: BookOpen,
-                    },
-                    {
-                      key: 'redditività' as const,
-                      title: 'Redditività & Analisi',
-                      description: 'Analisi dei costi, margini di contribuzione e profittabilità del menu.',
-                      icon: PiggyBank,
-                    },
-                  ].map(({ key, title, description, icon: Icon }) => (
+                <div className="w-full py-8 space-y-6">
+                  {/* Riga 1: 3 card principali */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {[
+                      {
+                        key: 'inventario' as const,
+                        title: 'Inventario & Magazzino',
+                        description: 'Ingredienti, fornitori, scorte ideali e importazione inventario.',
+                        icon: Boxes,
+                      },
+                      {
+                        key: 'ricette' as const,
+                        title: 'Ricette',
+                        description: 'Gestisci le ricette dei piatti con ingredienti, dosi e preparazioni.',
+                        icon: BookOpen,
+                      },
+                      {
+                        key: 'redditività' as const,
+                        title: 'Redditività & Analisi',
+                        description: 'Analisi dei costi, margini di contribuzione e profittabilità del menu.',
+                        icon: PiggyBank,
+                      },
+                    ].map(({ key, title, description, icon: Icon }) => (
+                      <button
+                        key={key}
+                        onClick={() => setMenuSubView(key)}
+                        className={`group text-left p-8 rounded-2xl border transition-all duration-200 hover:shadow-xl hover:-translate-y-1 flex flex-col ${
+                          isDinner
+                            ? 'bg-[#1E293B] border-[#334155] hover:border-[#967D62]'
+                            : 'bg-[#FDFAF5] border-[#EAE5DA] hover:border-[#967D62] hover:bg-white'
+                        }`}
+                      >
+                        <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-6 transition-colors ${
+                          isDinner
+                            ? 'bg-[#967D62]/20 text-[#C4A882] group-hover:bg-[#967D62]/30'
+                            : 'bg-[#967D62]/10 text-[#967D62] group-hover:bg-[#967D62]/20'
+                        }`}>
+                          <Icon className="w-8 h-8" />
+                        </div>
+                        <h3 className={`font-bold text-xl mb-2 ${textColor}`}>{title}</h3>
+                        <p className={`text-sm leading-relaxed flex-1 ${mutedText}`}>{description}</p>
+                        <div className={`flex items-center gap-1.5 mt-6 text-sm font-semibold ${isDinner ? 'text-[#C4A882]' : 'text-[#967D62]'}`}>
+                          Apri <ChevronRight className="w-4 h-4" />
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                  {/* Riga 2: Storico (+ Simulazione in futuro) */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <button
-                      key={key}
-                      onClick={() => setMenuSubView(key)}
+                      onClick={() => setMenuSubView('storico')}
                       className={`group text-left p-8 rounded-2xl border transition-all duration-200 hover:shadow-xl hover:-translate-y-1 flex flex-col ${
                         isDinner
                           ? 'bg-[#1E293B] border-[#334155] hover:border-[#967D62]'
@@ -2374,15 +2402,26 @@ function App() {
                           ? 'bg-[#967D62]/20 text-[#C4A882] group-hover:bg-[#967D62]/30'
                           : 'bg-[#967D62]/10 text-[#967D62] group-hover:bg-[#967D62]/20'
                       }`}>
-                        <Icon className="w-8 h-8" />
+                        <History className="w-8 h-8" />
                       </div>
-                      <h3 className={`font-bold text-xl mb-2 ${textColor}`}>{title}</h3>
-                      <p className={`text-sm leading-relaxed flex-1 ${mutedText}`}>{description}</p>
+                      <h3 className={`font-bold text-xl mb-2 ${textColor}`}>Storico Analisi</h3>
+                      <p className={`text-sm leading-relaxed flex-1 ${mutedText}`}>Consulta le analisi passate, confronta periodi e monitora l'evoluzione del menu nel tempo.</p>
                       <div className={`flex items-center gap-1.5 mt-6 text-sm font-semibold ${isDinner ? 'text-[#C4A882]' : 'text-[#967D62]'}`}>
                         Apri <ChevronRight className="w-4 h-4" />
                       </div>
                     </button>
-                  ))}
+                    {/* Placeholder Simulazione — coming soon */}
+                    <div className={`relative text-left p-8 rounded-2xl border flex flex-col opacity-50 cursor-not-allowed ${
+                      isDinner ? 'bg-[#1E293B] border-[#334155]' : 'bg-[#FDFAF5] border-[#EAE5DA]'
+                    }`}>
+                      <span className={`absolute top-4 right-4 text-[10px] font-bold px-2 py-0.5 rounded-full ${isDinner ? 'bg-[#334155] text-[#94A3B8]' : 'bg-gray-100 text-gray-400'}`}>COMING SOON</span>
+                      <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-6 ${isDinner ? 'bg-[#967D62]/10 text-[#967D62]/40' : 'bg-[#967D62]/5 text-[#967D62]/30'}`}>
+                        <Zap className="w-8 h-8" />
+                      </div>
+                      <h3 className={`font-bold text-xl mb-2 ${textColor}`}>Simulazione</h3>
+                      <p className={`text-sm leading-relaxed flex-1 ${mutedText}`}>Sandbox per simulare variazioni di prezzo, quantità e frequenze senza salvare dati reali.</p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </main>
@@ -2524,6 +2563,28 @@ function App() {
                 setActiveView={setActiveView}
                 getFestivitaAvviso={getFestivitaAvviso}
                 menuPrices={menuPrices} setMenuPrices={setMenuPrices} saveMenuPrice={saveMenuPrice}
+              />
+            </>
+          )}
+
+          {/* ========== MENU / STORICO ========== */}
+          {activeView === "Menu" && menuSubView === 'storico' && (
+            <>
+              <div className={`flex items-center gap-3 px-6 pt-6 pb-2 max-w-6xl mx-auto w-full`}>
+                <button onClick={() => setMenuSubView('landing')} className={`flex items-center gap-1.5 text-sm font-medium ${mutedText} hover:${textColor} transition-colors`}>
+                  <ArrowLeft className="w-4 h-4" /> Menu
+                </button>
+                <span className={mutedText}>/</span>
+                <span className={`text-sm font-semibold ${textColor}`}>Storico Analisi</span>
+              </div>
+              <StoricoView
+                isDinner={isDinner}
+                textColor={textColor}
+                mutedText={mutedText}
+                cardBg={isDinner ? 'bg-[#1E293B] border-[#334155]' : 'bg-white border-[#EAE5DA] shadow-sm'}
+                accentColor={'text-[#967D62]'}
+                supabase={supabase}
+                isLoggedIn={isLoggedIn}
               />
             </>
           )}
