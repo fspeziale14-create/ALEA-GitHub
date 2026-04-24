@@ -2547,6 +2547,8 @@ function App() {
                 recipes={recipes}
                 preparations={preparations}
                 isDinner={isDinner}
+                supabase={supabase}
+                isLoggedIn={isLoggedIn}
               />
             </>
           )}
