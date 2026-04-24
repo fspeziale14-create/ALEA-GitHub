@@ -13,6 +13,7 @@ import { SidebarProvider, SidebarInset, SidebarTrigger } from './components/ui/s
 import { DashboardSidebar } from './components/dashboard-sidebar';
 import { MenuProfitability } from './components/menu-profitability';
 import { StoricoView } from './components/storico-view';
+import { SimulazioneView } from './components/simulazione-view';
 import { DashboardView } from './DashboardView';
 import { PianificazioneView } from './PianificazioneView';
 import { ImpostazioniView } from './ImpostazioniView';
@@ -130,7 +131,7 @@ function App() {
 
   // ====== NAVIGAZIONE ======
   const [activeView, setActiveView] = useState<string>("Dashboard");
-  const [menuSubView, setMenuSubView] = useState<'landing' | 'inventario' | 'ricette' | 'redditività' | 'storico'>('landing');
+  const [menuSubView, setMenuSubView] = useState<'landing' | 'inventario' | 'ricette' | 'redditività' | 'storico' | 'simulazione'>('landing');
 
   const handleViewChange = (view: string) => {
     setActiveView(view);
@@ -2410,17 +2411,27 @@ function App() {
                         Apri <ChevronRight className="w-4 h-4" />
                       </div>
                     </button>
-                    {/* Placeholder Simulazione — coming soon */}
-                    <div className={`relative text-left p-8 rounded-2xl border flex flex-col opacity-50 cursor-not-allowed ${
-                      isDinner ? 'bg-[#1E293B] border-[#334155]' : 'bg-[#FDFAF5] border-[#EAE5DA]'
-                    }`}>
-                      <span className={`absolute top-4 right-4 text-[10px] font-bold px-2 py-0.5 rounded-full ${isDinner ? 'bg-[#334155] text-[#94A3B8]' : 'bg-gray-100 text-gray-400'}`}>COMING SOON</span>
-                      <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-6 ${isDinner ? 'bg-[#967D62]/10 text-[#967D62]/40' : 'bg-[#967D62]/5 text-[#967D62]/30'}`}>
+                    <button
+                      onClick={() => setMenuSubView('simulazione')}
+                      className={`group text-left p-8 rounded-2xl border transition-all duration-200 hover:shadow-xl hover:-translate-y-1 flex flex-col ${
+                        isDinner
+                          ? 'bg-[#1E293B] border-[#334155] hover:border-[#967D62]'
+                          : 'bg-[#FDFAF5] border-[#EAE5DA] hover:border-[#967D62] hover:bg-white'
+                      }`}
+                    >
+                      <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-6 transition-colors ${
+                        isDinner
+                          ? 'bg-[#967D62]/20 text-[#C4A882] group-hover:bg-[#967D62]/30'
+                          : 'bg-[#967D62]/10 text-[#967D62] group-hover:bg-[#967D62]/20'
+                      }`}>
                         <Zap className="w-8 h-8" />
                       </div>
                       <h3 className={`font-bold text-xl mb-2 ${textColor}`}>Simulazione</h3>
                       <p className={`text-sm leading-relaxed flex-1 ${mutedText}`}>Sandbox per simulare variazioni di prezzo, quantità e frequenze senza salvare dati reali.</p>
-                    </div>
+                      <div className={`flex items-center gap-1.5 mt-6 text-sm font-semibold ${isDinner ? 'text-[#C4A882]' : 'text-[#967D62]'}`}>
+                        Apri <ChevronRight className="w-4 h-4" />
+                      </div>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -2578,6 +2589,28 @@ function App() {
                 <span className={`text-sm font-semibold ${textColor}`}>Storico Analisi</span>
               </div>
               <StoricoView
+                isDinner={isDinner}
+                textColor={textColor}
+                mutedText={mutedText}
+                cardBg={isDinner ? 'bg-[#1E293B] border-[#334155]' : 'bg-white border-[#EAE5DA] shadow-sm'}
+                accentColor={'text-[#967D62]'}
+                supabase={supabase}
+                isLoggedIn={isLoggedIn}
+              />
+            </>
+          )}
+
+          {/* ========== MENU / SIMULAZIONE ========== */}
+          {activeView === "Menu" && menuSubView === 'simulazione' && (
+            <>
+              <div className={`flex items-center gap-3 px-6 pt-6 pb-2 max-w-6xl mx-auto w-full`}>
+                <button onClick={() => setMenuSubView('landing')} className={`flex items-center gap-1.5 text-sm font-medium ${mutedText} hover:${textColor} transition-colors`}>
+                  <ArrowLeft className="w-4 h-4" /> Menu
+                </button>
+                <span className={mutedText}>/</span>
+                <span className={`text-sm font-semibold ${textColor}`}>Simulazione</span>
+              </div>
+              <SimulazioneView
                 isDinner={isDinner}
                 textColor={textColor}
                 mutedText={mutedText}
