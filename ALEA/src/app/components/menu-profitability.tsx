@@ -3,11 +3,12 @@
 // Componente autonomo. Props ricevute da App.tsx.
 // ================================================================
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import {
   TrendingUp, TrendingDown, Upload, AlertCircle, ChevronDown,
   ChevronUp, BarChart2, Pencil, Check, X, Info, Filter,
-  ArrowUpDown, PiggyBank, Package, Percent, Euro, Zap, Target, Eye, RefreshCw
+  ArrowUpDown, PiggyBank, Package, Percent, Euro, Zap, Target, Eye, RefreshCw,
+  Calendar, Save, Trash2, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ZAxis, Cell } from 'recharts';
 import { MENU_CATEGORIES, MENU_PRICES } from '../constants';
@@ -182,12 +183,39 @@ const calcIngredientCost = (
 
 // ── PROPS ─────────────────────────────────────────────────────────
 
+// ── Snapshot salvato ─────────────────────────────────────────────
+interface DishSnapshot {
+  name: string;
+  category: string;
+  score: number | null;
+  marginPct: number;
+  foodCostPct: number;
+  frequency: number;
+  priceNet: number;
+  ingredientCost: number;
+  hasMissingCosts: boolean;
+  quadrant: 'stella' | 'promuovi' | 'rivedi' | 'valuta';
+}
+interface AnalysisSnapshot {
+  id: string;
+  label: string;
+  period_start: string;
+  period_end: string;
+  created_at: string;
+  data: {
+    dishes: DishSnapshot[];
+    kpi: { avgFoodCost: number; avgMargin: number; topDish: string; missingCount: number };
+  };
+}
+
 interface MenuProfitabilityProps {
   ingredients: Ingredient[];
   setIngredients: React.Dispatch<React.SetStateAction<Ingredient[]>>;
   recipes: Record<string, RecipeRow[]>;
   preparations: Array<{ id: string; name: string; yieldQty: number; yieldUnit: string; ingredients: Array<{ ingredientId: string; qty: number; unit?: string; portionsPerPiece?: number }> }>;
   isDinner: boolean;
+  supabase: any;
+  isLoggedIn: boolean;
 }
 
 // ================================================================
@@ -200,6 +228,8 @@ export function MenuProfitability({
   recipes,
   preparations,
   isDinner,
+  supabase,
+  isLoggedIn,
 }: MenuProfitabilityProps) {
 
   // ── TEMA (consistente con App.tsx) ────────────────────────────
@@ -233,6 +263,185 @@ export function MenuProfitability({
   const [freqImportMsg, setFreqImportMsg] = useState<{ type: 'ok' | 'err' | 'info'; msg: string } | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const freqInputRef = useRef<HTMLInputElement>(null);
+
+  // ── PERIODO SELEZIONE & SNAPSHOT ─────────────────────────────
+  const [periodStart, setPeriodStart] = useState<string | null>(null);
+  const [periodEnd, setPeriodEnd] = useState<string | null>(null);
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [calendarMonth, setCalendarMonth] = useState<Date>(new Date());
+  const [calendarStep, setCalendarStep] = useState<'start' | 'end'>('start');
+  const [snapshots, setSnapshots] = useState<AnalysisSnapshot[]>([]);
+  const [savingSnapshot, setSavingSnapshot] = useState(false);
+  const [saveMsg, setSaveMsg] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null);
+  const calendarRef = useRef<HTMLDivElement>(null);
+
+  // Carica snapshots da Supabase al login
+  useEffect(() => {
+    if (!isLoggedIn) return;
+    const load = async () => {
+      const userId = (await supabase.auth.getUser()).data.user?.id;
+      if (!userId) return;
+      const { data } = await supabase
+        .from('analysis_snapshots')
+        .select('*')
+        .eq('user_id', userId)
+        .order('period_start', { ascending: false });
+      if (data) setSnapshots(data as AnalysisSnapshot[]);
+    };
+    load();
+  }, [isLoggedIn]);
+
+  // Chiudi calendario cliccando fuori
+  useEffect(() => {
+    if (!showCalendar) return;
+    const handler = (e: MouseEvent) => {
+      if (calendarRef.current && !calendarRef.current.contains(e.target as Node)) {
+        setShowCalendar(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showCalendar]);
+
+  // Date già occupate da snapshot esistenti
+  const occupiedRanges = snapshots.map(s => ({ start: s.period_start, end: s.period_end }));
+
+  const isDateOccupied = (dateStr: string): boolean => {
+    return occupiedRanges.some(r => dateStr >= r.start && dateStr <= r.end);
+  };
+
+  const isDateInSelection = (dateStr: string): boolean => {
+    if (!periodStart) return false;
+    if (!periodEnd) return dateStr === periodStart;
+    return dateStr >= periodStart && dateStr <= periodEnd;
+  };
+
+  const handleCalendarDayClick = (dateStr: string) => {
+    if (isDateOccupied(dateStr)) return;
+    if (calendarStep === 'start') {
+      setPeriodStart(dateStr);
+      setPeriodEnd(null);
+      setCalendarStep('end');
+    } else {
+      if (dateStr < periodStart!) {
+        setPeriodStart(dateStr);
+        setCalendarStep('end');
+        return;
+      }
+      // Check no occupied dates in range
+      const hasConflict = occupiedRanges.some(r => !(dateStr < r.start || periodStart! > r.end));
+      if (hasConflict) return;
+      setPeriodEnd(dateStr);
+      setShowCalendar(false);
+      setCalendarStep('start');
+    }
+  };
+
+  const periodLabel = periodStart && periodEnd
+    ? `${periodStart.split('-').reverse().slice(0,2).join('/')} — ${periodEnd.split('-').reverse().slice(0,2).join('/')}`
+    : null;
+
+  // Determina quadrante di un piatto
+  const getQuadrantForSnapshot = (dish: DishMargin, medianFreq: number, medianMargin: number): 'stella' | 'promuovi' | 'rivedi' | 'valuta' => {
+    const freq = dish.frequency ?? 0;
+    const margin = dish.marginPct;
+    if (freq >= medianFreq && margin >= medianMargin) return 'stella';
+    if (freq < medianFreq && margin >= medianMargin) return 'promuovi';
+    if (freq >= medianFreq && margin < medianMargin) return 'rivedi';
+    return 'valuta';
+  };
+
+  const handleSaveSnapshot = async () => {
+    if (!periodStart || !periodEnd || !isLoggedIn) return;
+    setSavingSnapshot(true);
+    setSaveMsg(null);
+    try {
+      const userId = (await supabase.auth.getUser()).data.user?.id;
+      if (!userId) throw new Error('Utente non trovato');
+
+      // Calcola mediane per quadranti
+      const dishesWithFreq = allDishes.filter(d => (d.frequency ?? 0) > 0 && !d.hasMissingCosts);
+      const freqs = dishesWithFreq.map(d => d.frequency ?? 0).sort((a, b) => a - b);
+      const margins = dishesWithFreq.map(d => d.marginPct).sort((a, b) => a - b);
+      const medianFreq = freqs.length ? freqs[Math.floor(freqs.length / 2)] : 0;
+      const medianMargin = margins.length ? margins[Math.floor(margins.length / 2)] : 0;
+
+      const dishSnapshots: DishSnapshot[] = allDishes.map(d => ({
+        name: d.name,
+        category: d.category,
+        score: d.score ?? null,
+        marginPct: d.marginPct,
+        foodCostPct: d.foodCostPct,
+        frequency: d.frequency ?? 0,
+        priceNet: d.priceNet,
+        ingredientCost: d.ingredientCost,
+        hasMissingCosts: d.hasMissingCosts,
+        quadrant: getQuadrantForSnapshot(d, medianFreq, medianMargin),
+      }));
+
+      const withCosts = allDishes.filter(d => !d.hasMissingCosts);
+      const kpi = {
+        avgFoodCost: withCosts.length ? withCosts.reduce((s, d) => s + d.foodCostPct, 0) / withCosts.length : 0,
+        avgMargin: withCosts.length ? withCosts.reduce((s, d) => s + d.marginPct, 0) / withCosts.length : 0,
+        topDish: withCosts.sort((a, b) => b.marginPct - a.marginPct)[0]?.name ?? '—',
+        missingCount: allDishes.filter(d => d.hasMissingCosts).length,
+      };
+
+      const snapshot = {
+        user_id: userId,
+        label: periodLabel!,
+        period_start: periodStart,
+        period_end: periodEnd,
+        data: { dishes: dishSnapshots, kpi },
+      };
+
+      const { data: saved, error } = await supabase
+        .from('analysis_snapshots')
+        .insert(snapshot)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Scala magazzino: scala currentQty in base alle frequenze
+      setIngredients((prev: Ingredient[]) => {
+        const updated = [...prev];
+        allDishes.forEach(dish => {
+          const freq = dish.frequency ?? 0;
+          if (freq === 0) return;
+          const rows = (recipes as any)[dish.name] || [];
+          rows.forEach((row: any) => {
+            if (row.ingredientId.startsWith('prep:')) return; // skip prep per ora
+            const idx = updated.findIndex(i => i.id === row.ingredientId);
+            if (idx === -1) return;
+            const ing = updated[idx];
+            if (isPieceUnit(ing.unit)) {
+              if (row.portionsPerPiece && row.portionsPerPiece > 0) {
+                const consumed = freq / row.portionsPerPiece;
+                updated[idx] = { ...ing, currentQty: Math.max(0, ing.currentQty - consumed) };
+              }
+            } else {
+              const qtyInBase = toBaseQty(row.qty, row.unit ?? ing.unit, ing.unit);
+              const consumed = qtyInBase * freq;
+              updated[idx] = { ...ing, currentQty: Math.max(0, ing.currentQty - consumed) };
+            }
+          });
+        });
+        return updated;
+      });
+
+      setSnapshots(prev => [saved as AnalysisSnapshot, ...prev]);
+      setFrequencies({});
+      setFreqPeriodLabel('');
+      setPeriodStart(null);
+      setPeriodEnd(null);
+      setSaveMsg({ type: 'ok', msg: 'Analisi salvata e magazzino aggiornato.' });
+    } catch (err: any) {
+      setSaveMsg({ type: 'err', msg: `Errore: ${err.message}` });
+    } finally {
+      setSavingSnapshot(false);
+    }
+  };
 
   // ── PIATTI ESCLUSI (non esistono nel menu reale) ─────────────
   const EXCLUDED_DISHES = new Set(['Caesar salad']);
@@ -843,18 +1052,18 @@ export function MenuProfitability({
         ))}
       </div>
 
-      {/* TAB SELECTOR — griglia 2x2 su mobile, riga su desktop */}
+      {/* TAB SELECTOR — griglia sempre a piena larghezza, 2x2 mobile, 1x4 desktop */}
       <div className={`grid grid-cols-2 sm:grid-cols-4 gap-1 p-1 rounded-xl border mb-6 w-full ${isDinner ? 'bg-[#0F172A] border-[#334155]' : 'bg-black/5 border-[#EAE5DA]'}`}>
         {[
           { key: 'margini',     label: 'Analisi Margini',  icon: BarChart2 },
+          { key: 'frequenze',   label: 'Frequenze',         icon: TrendingUp },
           { key: 'portfolio',   label: 'Portfolio',         icon: Target },
           { key: 'ingredienti', label: 'Ingredienti',       icon: Package },
-          { key: 'frequenze',   label: 'Frequenze',         icon: TrendingUp },
         ].map(({ key, label, icon: Icon }) => (
           <button
             key={key}
             onClick={() => setActiveTab(key as any)}
-            className={`flex flex-col sm:flex-row items-center justify-center gap-1.5 px-2 py-2.5 rounded-lg text-xs sm:text-sm font-semibold transition-all text-center ${
+            className={`flex items-center justify-center gap-2 px-2 py-2.5 rounded-lg text-sm font-semibold transition-all w-full ${
               activeTab === key
                 ? (isDinner ? 'bg-[#967D62] text-white shadow-sm' : 'bg-white text-[#967D62] shadow-sm border border-[#EAE5DA]')
                 : `${mutedText} hover:text-[#967D62]`
@@ -1229,7 +1438,7 @@ export function MenuProfitability({
       )}
 
       {/* ============================================================
-          TAB 4 — FREQUENZE
+          TAB 2 — FREQUENZE
       ============================================================ */}
       {activeTab === 'frequenze' && (
         <div className="space-y-6">
@@ -1244,7 +1453,9 @@ export function MenuProfitability({
                 Il file deve avere almeno una colonna <strong>piatto</strong> e una colonna <strong>quantità</strong>.
               </p>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-4">
+
+              {/* Drop zone */}
               <div
                 onDragOver={e => { e.preventDefault(); setIsDragging(true); }}
                 onDragLeave={() => setIsDragging(false)}
@@ -1263,6 +1474,7 @@ export function MenuProfitability({
                 </div>
                 <input ref={freqInputRef} type="file" accept=".csv,.xlsx,.xls,.tsv,.txt,.json" onChange={handleFreqInputChange} className="hidden" />
               </div>
+
               {freqImportMsg && (
                 <div className={`flex items-center gap-2 p-3 rounded-lg text-xs font-medium ${
                   freqImportMsg.type === 'ok'  ? (isDinner ? 'bg-emerald-950/30 text-emerald-400 border border-emerald-800/40' : 'bg-emerald-50 text-emerald-700 border border-emerald-200') :
@@ -1273,25 +1485,158 @@ export function MenuProfitability({
                   {freqImportMsg.msg}
                 </div>
               )}
-              {freqPeriodLabel && (
-                <div className={`flex items-center gap-2 text-xs ${mutedText}`}>
-                  <Package className="w-3.5 h-3.5" />
-                  Periodo: <span className={`font-semibold ${textColor}`}>{freqPeriodLabel}</span>
-                  <button onClick={() => { setFrequencies({}); setFreqPeriodLabel(''); }} className="ml-auto text-xs text-rose-500 hover:text-rose-400 transition-colors">
-                    Rimuovi dati
-                  </button>
-                </div>
-              )}
+
+              {/* Esempio formato + selettore periodo */}
               <div className={`p-3 rounded-lg border ${isDinner ? 'bg-[#0F172A] border-[#334155]' : 'bg-gray-50 border-[#EAE5DA]'}`}>
-                <p className={`text-[10px] font-semibold uppercase tracking-wider ${mutedText} mb-2`}>Esempio formato accettato</p>
-                <div className={`font-mono text-xs ${textColor}`}>
-                  <div className={`grid grid-cols-3 gap-4 pb-1 mb-1 border-b ${dividerCls} font-bold`}>
-                    <span>piatto</span><span>quantità</span><span>dal</span>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                  {/* Esempio compatto */}
+                  <div className="flex-1">
+                    <p className={`text-[10px] font-semibold uppercase tracking-wider ${mutedText} mb-2`}>Esempio formato accettato</p>
+                    <div className={`font-mono text-xs ${textColor}`}>
+                      <div className={`grid grid-cols-2 gap-4 pb-1 mb-1 border-b ${dividerCls} font-bold`}>
+                        <span>piatto</span><span>quantità</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4 opacity-70"><span>Bay burger</span><span>142</span></div>
+                      <div className="grid grid-cols-2 gap-4 opacity-70"><span>Mojito</span><span>89</span></div>
+                    </div>
                   </div>
-                  <div className="grid grid-cols-3 gap-4 opacity-70"><span>Bay burger</span><span>142</span><span>01/04</span></div>
-                  <div className="grid grid-cols-3 gap-4 opacity-70"><span>Mojito</span><span>89</span><span>01/04</span></div>
+
+                  {/* Separatore verticale */}
+                  <div className={`hidden sm:block w-px self-stretch ${isDinner ? 'bg-[#334155]' : 'bg-[#EAE5DA]'}`} />
+
+                  {/* Selettore periodo */}
+                  <div className="flex-1 relative" ref={calendarRef}>
+                    <p className={`text-[10px] font-semibold uppercase tracking-wider ${mutedText} mb-2`}>Periodo analisi</p>
+                    <button
+                      onClick={() => { setShowCalendar(v => !v); setCalendarStep('start'); }}
+                      className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-colors w-full ${
+                        periodLabel
+                          ? (isDinner ? 'border-[#967D62]/60 text-[#C4A882] bg-[#967D62]/10' : 'border-[#967D62]/60 text-[#967D62] bg-[#967D62]/5')
+                          : (isDinner ? 'border-[#334155] text-[#94A3B8] hover:border-[#967D62]/40' : 'border-[#EAE5DA] text-[#8C8A85] hover:border-[#967D62]/40')
+                      }`}
+                    >
+                      <Calendar className="w-4 h-4 shrink-0" />
+                      <span className="flex-1 text-left truncate">
+                        {periodLabel ?? (calendarStep === 'end' && periodStart ? `Da ${periodStart.split('-').reverse().slice(0,2).join('/')} — seleziona fine` : 'Seleziona periodo')}
+                      </span>
+                      {periodLabel && <span className={`text-[10px] ${mutedText}`}>Modifica</span>}
+                    </button>
+                    {periodLabel && (
+                      <button onClick={() => { setPeriodStart(null); setPeriodEnd(null); }} className={`text-[10px] mt-1 ${mutedText} hover:text-rose-400 transition-colors`}>
+                        Rimuovi periodo
+                      </button>
+                    )}
+
+                    {/* Popup calendario */}
+                    {showCalendar && (
+                      <div className={`absolute z-50 mt-2 p-3 rounded-xl border shadow-xl ${isDinner ? 'bg-[#1E293B] border-[#334155]' : 'bg-white border-[#EAE5DA]'}`}
+                        style={{ minWidth: 280 }}>
+                        {/* Istruzione */}
+                        <p className={`text-[10px] font-semibold uppercase tracking-wider mb-3 ${accent}`}>
+                          {calendarStep === 'start' ? 'Seleziona data inizio' : 'Seleziona data fine'}
+                        </p>
+                        {/* Header mese */}
+                        <div className="flex items-center justify-between mb-2">
+                          <button onClick={() => setCalendarMonth(m => new Date(m.getFullYear(), m.getMonth()-1, 1))} className={`p-1 rounded hover:bg-black/5 ${mutedText}`}>
+                            <ChevronLeft className="w-4 h-4" />
+                          </button>
+                          <span className={`text-sm font-semibold ${textColor}`}>
+                            {calendarMonth.toLocaleDateString('it-IT', { month: 'long', year: 'numeric' })}
+                          </span>
+                          <button onClick={() => setCalendarMonth(m => new Date(m.getFullYear(), m.getMonth()+1, 1))} className={`p-1 rounded hover:bg-black/5 ${mutedText}`}>
+                            <ChevronRight className="w-4 h-4" />
+                          </button>
+                        </div>
+                        {/* Giorni della settimana */}
+                        <div className="grid grid-cols-7 mb-1">
+                          {['L','M','M','G','V','S','D'].map((d, i) => (
+                            <div key={i} className={`text-center text-[10px] font-bold pb-1 ${mutedText}`}>{d}</div>
+                          ))}
+                        </div>
+                        {/* Celle giorno */}
+                        {(() => {
+                          const year = calendarMonth.getFullYear();
+                          const month = calendarMonth.getMonth();
+                          const firstDay = new Date(year, month, 1);
+                          // Monday-first: 0=Mon..6=Sun
+                          const startOffset = (firstDay.getDay() + 6) % 7;
+                          const daysInMonth = new Date(year, month+1, 0).getDate();
+                          const cells: (number|null)[] = Array(startOffset).fill(null);
+                          for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+                          while (cells.length % 7 !== 0) cells.push(null);
+                          const weeks: (number|null)[][] = [];
+                          for (let i = 0; i < cells.length; i += 7) weeks.push(cells.slice(i, i+7));
+                          return weeks.map((week, wi) => (
+                            <div key={wi} className="grid grid-cols-7">
+                              {week.map((day, di) => {
+                                if (!day) return <div key={di} />;
+                                const mm = String(month+1).padStart(2,'0');
+                                const dd = String(day).padStart(2,'0');
+                                const dateStr = `${year}-${mm}-${dd}`;
+                                const occupied = isDateOccupied(dateStr);
+                                const inSel = isDateInSelection(dateStr);
+                                const isStart = dateStr === periodStart;
+                                const isEnd = dateStr === periodEnd;
+                                return (
+                                  <button
+                                    key={di}
+                                    disabled={occupied}
+                                    onClick={() => handleCalendarDayClick(dateStr)}
+                                    className={`relative h-8 w-full text-xs rounded-md transition-all ${
+                                      occupied ? `opacity-30 cursor-not-allowed line-through ${mutedText}` :
+                                      isStart || isEnd ? 'bg-[#967D62] text-white font-bold' :
+                                      inSel ? (isDinner ? 'bg-[#967D62]/20 text-[#C4A882]' : 'bg-[#967D62]/10 text-[#967D62]') :
+                                      (isDinner ? 'text-[#F4F1EA] hover:bg-[#334155]' : 'text-[#2C2A28] hover:bg-gray-100')
+                                    }`}
+                                  >
+                                    {day}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          ));
+                        })()}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
+
+              {/* Riga azioni: Rimuovi dati + Salva analisi */}
+              <div className={`flex gap-3 pt-1 border-t ${dividerCls}`}>
+                <button
+                  onClick={() => { setFrequencies({}); setFreqPeriodLabel(''); setPeriodStart(null); setPeriodEnd(null); setSaveMsg(null); }}
+                  disabled={Object.keys(frequencies).length === 0}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border text-sm font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+                    isDinner ? 'border-[#334155] text-rose-400 hover:bg-rose-950/20' : 'border-[#EAE5DA] text-rose-500 hover:bg-rose-50'
+                  }`}
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Rimuovi dati
+                </button>
+                <button
+                  onClick={handleSaveSnapshot}
+                  disabled={!periodStart || !periodEnd || Object.keys(frequencies).length === 0 || savingSnapshot}
+                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+                    isDinner ? 'bg-[#967D62] hover:bg-[#7A654E] text-white' : 'bg-[#967D62] hover:bg-[#7A654E] text-white'
+                  }`}
+                >
+                  <Save className="w-4 h-4" />
+                  {savingSnapshot ? 'Salvataggio…' : 'Chiudi analisi e salva dati'}
+                </button>
+              </div>
+
+              {saveMsg && (
+                <div className={`flex items-center gap-2 p-3 rounded-lg text-xs font-medium ${
+                  saveMsg.type === 'ok'
+                    ? (isDinner ? 'bg-emerald-950/30 text-emerald-400 border border-emerald-800/40' : 'bg-emerald-50 text-emerald-700 border border-emerald-200')
+                    : (isDinner ? 'bg-rose-950/30 text-rose-400 border border-rose-800/40' : 'bg-rose-50 text-rose-700 border border-rose-200')
+                }`}>
+                  {saveMsg.type === 'ok' ? <Check className="w-3.5 h-3.5 shrink-0" /> : <AlertCircle className="w-3.5 h-3.5 shrink-0" />}
+                  {saveMsg.msg}
+                </div>
+              )}
+
             </CardContent>
           </Card>
 
