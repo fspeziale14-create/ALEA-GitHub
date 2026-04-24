@@ -40,6 +40,7 @@ interface AnalysisSnapshot {
   data: {
     dishes: DishSnapshot[];
     kpi: { avgFoodCost: number; avgMargin: number; topDish: string; missingCount: number };
+    recipes?: Record<string, Array<{ ingredientId: string; qty: number; unit?: string; portionsPerPiece?: number }>>;
   };
 }
 
