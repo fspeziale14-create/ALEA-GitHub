@@ -272,14 +272,71 @@ export function PianificazioneView(props: PianificazioneViewProps) {
         });
         if (added === 0) throw new Error('Nessun ingrediente valido trovato nel file.');
         setIngredients((prev: any[]) => {
-          const existing = new Set(prev.map((i: any) => i.name.toLowerCase()));
-          const toAdd = newItems.filter(i => !existing.has(i.name.toLowerCase()));
-          const dupes = newItems.length - toAdd.length;
-          const msg = dupes > 0
-            ? `Importati ${toAdd.length} ingredienti. ${dupes} già presenti ignorati.${skipped ? ` ${skipped} voci non valide saltate.` : ''}`
-            : `Importati ${toAdd.length} ingredienti.${skipped ? ` ${skipped} voci non valide saltate.` : ''}`;
-          setIngImportMsg({ type: dupes > 0 || skipped > 0 ? 'warn' : 'ok', msg });
-          return [...prev, ...toAdd];
+          const updated = [...prev];
+          let added = 0, merged = 0;
+
+          newItems.forEach((item: any) => {
+            const existingIdx = updated.findIndex(
+              (i: any) => i.name.toLowerCase() === item.name.toLowerCase()
+            );
+
+            if (existingIdx === -1) {
+              // Nuovo ingrediente — aggiunge normalmente
+              updated.push(item);
+              added++;
+            } else {
+              // Ingrediente esistente — merge
+              const existing = { ...updated[existingIdx] };
+
+              // Aggiunge currentQty se presente nel file
+              if (typeof item.currentQty === 'number' && item.currentQty > 0) {
+                existing.currentQty = (existing.currentQty ?? 0) + item.currentQty;
+              }
+
+              // Aggiorna idealQty solo se il file fornisce un valore diverso
+              if (typeof item.idealQty === 'number' && item.idealQty > 0 &&
+                  item.idealQty !== existing.idealQty) {
+                existing.idealQty = item.idealQty;
+              }
+
+              // Merge fornitori
+              if (Array.isArray(item.suppliers) && item.suppliers.length > 0) {
+                const existingSuppliers = [...(existing.suppliers ?? [])];
+                item.suppliers.forEach((newS: any) => {
+                  const sIdx = existingSuppliers.findIndex(
+                    (s: any) => s.name.toLowerCase() === newS.name.toLowerCase()
+                  );
+                  if (sIdx === -1) {
+                    // Fornitore nuovo — aggiunge
+                    existingSuppliers.push(newS);
+                  } else {
+                    // Fornitore esistente — aggiorna prezzo solo se diverso
+                    const existingS = { ...existingSuppliers[sIdx] };
+                    if (newS.pricePerBox > 0 && newS.pricePerBox !== existingS.pricePerBox) {
+                      existingS.pricePerBox = newS.pricePerBox;
+                    }
+                    if (newS.qtyPerBox > 0 && newS.qtyPerBox !== existingS.qtyPerBox) {
+                      existingS.qtyPerBox = newS.qtyPerBox;
+                    }
+                    existingSuppliers[sIdx] = existingS;
+                  }
+                });
+                existing.suppliers = existingSuppliers;
+              }
+
+              updated[existingIdx] = existing;
+              merged++;
+            }
+          });
+
+          const parts = [];
+          if (added > 0) parts.push(`${added} nuov${added === 1 ? 'o' : 'i'} ingrediente${added === 1 ? '' : 'i'} aggiunti`);
+          if (merged > 0) parts.push(`${merged} aggiornati`);
+          if (skipped > 0) parts.push(`${skipped} voci non valide saltate`);
+          const msg = parts.join(', ') + '.';
+          setIngImportMsg({ type: skipped > 0 ? 'warn' : 'ok', msg });
+
+          return updated;
         });
       } catch (err: any) {
         setIngImportMsg({ type: 'err', msg: `Errore: ${err.message}` });
