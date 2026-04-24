@@ -387,12 +387,19 @@ export function MenuProfitability({
         missingCount: allDishes.filter(d => d.hasMissingCosts).length,
       };
 
+      // Serializza le ricette attuali nello snapshot
+      // Salviamo solo i piatti che hanno almeno una riga ricetta
+      const recipesSnapshot: Record<string, any[]> = {};
+      Object.entries(recipes as Record<string, any[]>).forEach(([dish, rows]) => {
+        if (rows && rows.length > 0) recipesSnapshot[dish] = rows;
+      });
+
       const snapshot = {
         user_id: userId,
         label: periodLabel!,
         period_start: periodStart,
         period_end: periodEnd,
-        data: { dishes: dishSnapshots, kpi },
+        data: { dishes: dishSnapshots, kpi, recipes: recipesSnapshot },
       };
 
       const { data: saved, error } = await supabase
