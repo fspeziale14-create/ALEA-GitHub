@@ -268,6 +268,7 @@ export function MenuProfitability({
   const freqInputRef = useRef<HTMLInputElement>(null);
   const [bevPortfolioOpen, setBevPortfolioOpen] = useState(false);
   const [bevRankingOpen, setBevRankingOpen] = useState(false);
+  const [rankingSort, setRankingSort] = useState<'score' | 'guadagno' | 'ricavo'>('score');
 
   // ── PERIODO SELEZIONE & SNAPSHOT ─────────────────────────────
   const [periodStart, setPeriodStart] = useState<string | null>(null);
@@ -890,14 +891,19 @@ export function MenuProfitability({
   };
 
   // ── RANKING TAB ───────────────────────────────────────────────
+  const getRankingValue = (d: DishMargin, sort: 'score' | 'guadagno' | 'ricavo') => {
+    if (sort === 'score')    return d.score ?? 0;
+    if (sort === 'ricavo')   return d.priceNet * (d.frequency ?? 0);
+    // guadagno netto = (prezzo - costo ingredienti) * frequenza
+    return (d.priceNet - d.ingredientCost) * (d.frequency ?? 0);
+  };
   const rankingDishes = [...foodDishes]
     .filter(d => d.score != null || d.frequency != null)
-    .sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+    .sort((a, b) => getRankingValue(b, rankingSort) - getRankingValue(a, rankingSort));
   const rankingBeverages = [...beverageDishes]
     .filter(d => d.score != null || d.frequency != null)
-    .sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
-
-  const maxScore = rankingDishes[0]?.score ?? 1;
+    .sort((a, b) => getRankingValue(b, rankingSort) - getRankingValue(a, rankingSort));
+  const maxRankingValue = rankingDishes[0] ? getRankingValue(rankingDishes[0], rankingSort) : 1;
 
   // ── QUADRANTI PORTFOLIO ───────────────────────────────────────
   // Solo piatti FOOD con frequenza E margine calcolato (bevande separate)
@@ -1728,14 +1734,36 @@ export function MenuProfitability({
           {/* Ranking compatto */}
           {rankingDishes.length > 0 && (
             <div className="space-y-3">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-3 flex-wrap">
                 <h3 className={`text-sm font-bold uppercase tracking-wider ${textColor}`}>
                   Ranking — periodo: {freqPeriodLabel}
                 </h3>
-                <span className={`text-xs ${mutedText}`}>Margine% × Frequenza</span>
+                {/* Selettore ordinamento */}
+                <div className={`flex gap-1 p-1 rounded-lg border ${isDinner ? 'bg-[#0F172A] border-[#334155]' : 'bg-black/5 border-[#EAE5DA]'}`}>
+                  {([
+                    { key: 'score',    label: 'Score' },
+                    { key: 'guadagno', label: 'Guadagno netto' },
+                    { key: 'ricavo',   label: 'Ricavo lordo' },
+                  ] as const).map(opt => (
+                    <button key={opt.key} onClick={() => setRankingSort(opt.key)}
+                      className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${
+                        rankingSort === opt.key
+                          ? (isDinner ? 'bg-[#967D62] text-white' : 'bg-white text-[#967D62] shadow-sm border border-[#EAE5DA]')
+                          : `${mutedText} hover:text-[#967D62]`
+                      }`}
+                    >{opt.label}</button>
+                  ))}
+                </div>
               </div>
               {rankingDishes.map((dish, idx) => {
-                const barW = maxScore > 0 ? ((dish.score ?? 0) / maxScore) * 100 : 0;
+                const val = getRankingValue(dish, rankingSort);
+                const barW = maxRankingValue > 0 ? (val / maxRankingValue) * 100 : 0;
+                const valLabel = rankingSort === 'score'
+                  ? (dish.score != null ? dish.score.toFixed(0) : '—')
+                  : `€${val.toFixed(0)}`;
+                const valTitle = rankingSort === 'score' ? 'Score'
+                  : rankingSort === 'guadagno' ? 'Guadagno netto'
+                  : 'Ricavo lordo';
                 return (
                   <div key={dish.name} className={`flex items-center gap-4 p-3 rounded-xl border ${cardBg}`}>
                     <div className={`w-7 text-center text-sm font-bold ${idx < 3 ? accent : mutedText}`}>{idx + 1}</div>
@@ -1756,9 +1784,9 @@ export function MenuProfitability({
                         <div className={`text-xs ${mutedText}`}>Ordini</div>
                         <div className={`text-sm font-bold ${textColor}`}>{dish.frequency ?? '—'}</div>
                       </div>
-                      <div className="text-right">
-                        <div className={`text-xs ${mutedText}`}>Score</div>
-                        <div className={`text-base font-bold ${accent}`}>{dish.score != null ? dish.score.toFixed(0) : '—'}</div>
+                      <div className="text-right min-w-[64px]">
+                        <div className={`text-xs ${mutedText}`}>{valTitle}</div>
+                        <div className={`text-base font-bold ${accent}`}>{valLabel}</div>
                       </div>
                     </div>
                   </div>
@@ -1783,8 +1811,9 @@ export function MenuProfitability({
               {bevRankingOpen && (
                 <div className={`border-t ${isDinner ? 'border-[#334155]' : 'border-[#EAE5DA]'}`}>
                   {rankingBeverages.map((dish, idx) => {
-                    const maxBevScore = rankingBeverages[0]?.score ?? 1;
-                    const barW = maxBevScore > 0 ? ((dish.score ?? 0) / maxBevScore) * 100 : 0;
+                    const maxBevVal = rankingBeverages[0] ? getRankingValue(rankingBeverages[0], rankingSort) : 1;
+                    const val = getRankingValue(dish, rankingSort);
+                    const barW = maxBevVal > 0 ? (val / maxBevVal) * 100 : 0;
                     return (
                       <div key={dish.name} className={`flex items-center gap-4 px-5 py-3 border-t ${isDinner ? 'border-[#334155]/50' : 'border-[#EAE5DA]'}`}>
                         <span className={`text-sm font-bold w-6 shrink-0 ${mutedText}`}>{idx + 1}</span>
@@ -1806,8 +1835,12 @@ export function MenuProfitability({
                             <div className={`text-sm font-semibold ${textColor}`}>{dish.frequency ?? '—'}</div>
                           </div>
                           <div>
-                            <div className={`text-xs ${mutedText}`}>Score</div>
-                            <div className={`text-base font-bold ${accent}`}>{dish.score != null ? dish.score.toFixed(0) : '—'}</div>
+                            <div className={`text-xs ${mutedText}`}>{rankingSort === 'score' ? 'Score' : rankingSort === 'guadagno' ? 'Guadagno' : 'Ricavo'}</div>
+                            <div className={`text-base font-bold ${accent}`}>{
+                              rankingSort === 'score'
+                                ? (dish.score != null ? dish.score.toFixed(0) : '—')
+                                : `€${val.toFixed(0)}`
+                            }</div>
                           </div>
                         </div>
                       </div>
