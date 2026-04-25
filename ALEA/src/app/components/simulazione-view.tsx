@@ -550,12 +550,17 @@ export function SimulazioneView({
 
                       {/* Preview risultato piatto */}
                       <div className={`grid grid-cols-2 sm:grid-cols-4 gap-3 p-3 rounded-xl border ${isDinner ? 'bg-[#0F172A] border-[#334155]' : 'bg-gray-50 border-[#EAE5DA]'}`}>
-                        {[
-                          { label: 'Food Cost',  val: `${dish.ingredientCost > 0 ? ((sim.ingCost / sim.price) * 100).toFixed(1) : '—'}%`,   base: `${dish.foodCostPct.toFixed(1)}%`   },
-                          { label: 'Margine',    val: `${simMarginPct.toFixed(1)}%`,                                                           base: `${dish.marginPct.toFixed(1)}%`    },
-                          { label: 'Score',      val: simScore.toFixed(0),                                                                     base: `${(dish.score ?? 0).toFixed(0)}` },
-                          { label: 'Quadrante',  val: quadrantLabel[simQuadrant],                                                              base: quadrantLabel[dish.quadrant],       isQuadrant: true },
-                        ].map(kpi => (
+                        {(() => {
+                          const simGuadagno = (sim.price - sim.ingCost) * sim.frequency;
+                          const baseGuadagno = (dish.priceNet - dish.ingredientCost) * dish.frequency;
+                          const kpis = [
+                            { label: 'Food Cost',       val: `${dish.ingredientCost > 0 ? ((sim.ingCost / sim.price) * 100).toFixed(1) : '—'}%`, base: `${dish.foodCostPct.toFixed(1)}%`  },
+                            { label: 'Margine',         val: `${simMarginPct.toFixed(1)}%`,                                                        base: `${dish.marginPct.toFixed(1)}%`   },
+                            { label: 'Guadagno netto',  val: `€${simGuadagno.toFixed(0)}`,                                                         base: `€${baseGuadagno.toFixed(0)}`     },
+                            { label: 'Quadrante',       val: quadrantLabel[simQuadrant],                                                            base: quadrantLabel[dish.quadrant],      isQuadrant: true },
+                          ];
+                          return kpis;
+                        })().map(kpi => (
                           <div key={kpi.label}>
                             <p className={`text-[10px] font-semibold uppercase tracking-wider ${mutedText} mb-0.5`}>{kpi.label}</p>
                             <p className={`text-sm font-bold ${'isQuadrant' in kpi ? quadrantColor(simQuadrant, isDinner) : textColor}`}>{kpi.val}</p>
