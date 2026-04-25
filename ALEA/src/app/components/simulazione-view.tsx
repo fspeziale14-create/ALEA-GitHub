@@ -58,6 +58,7 @@ interface SimulazioneViewProps {
 }
 
 // ── HELPERS ───────────────────────────────────────────────────────
+const isBeverageCategory = (category: string) => category === 'COCKTAILS & BEVERAGE';
 
 const quadrantLabel: Record<string, string> = {
   stella:   '⭐ Stella',
@@ -69,8 +70,8 @@ const quadrantLabel: Record<string, string> = {
 const quadrantColor = (q: string, isDinner: boolean) => {
   if (q === 'stella')   return isDinner ? 'text-amber-400'   : 'text-amber-600';
   if (q === 'promuovi') return isDinner ? 'text-emerald-400' : 'text-emerald-600';
-  if (q === 'rivedi')   return isDinner ? 'text-rose-400'    : 'text-rose-600';
-  return isDinner ? 'text-slate-400' : 'text-slate-500';
+  if (q === 'rivedi')   return isDinner ? 'text-slate-400'   : 'text-slate-500';
+  return isDinner ? 'text-rose-400' : 'text-rose-600';
 };
 
 // Calcola quadrante con le soglie mediana del periodo (fisse)
@@ -105,6 +106,8 @@ export function SimulazioneView({
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<string>('');
   const [expandedDish, setExpandedDish] = useState<string | null>(null);
+  const [simDropOpen, setSimDropOpen] = useState(false);
+  const [simBevOpen, setSimBevOpen] = useState(false);
   // Mappa nome piatto → valori simulati (solo piatti modificati)
   const [simValues, setSimValues] = useState<Record<string, DishSim>>({});
 
@@ -239,18 +242,39 @@ export function SimulazioneView({
               {snapshots.length === 0 ? (
                 <p className={`text-sm ${mutedText}`}>Nessun periodo salvato. Carica le frequenze in Redditività e salva una prima analisi.</p>
               ) : (
-                <select
-                  value={selectedId}
-                  onChange={e => setSelectedId(e.target.value)}
-                  className={`w-full sm:w-auto px-3 py-2 rounded-lg border text-sm ${inputCls}`}
-                >
-                  <option value="">— Seleziona un periodo —</option>
-                  {snapshots.map(s => (
-                    <option key={s.id} value={s.id}>
-                      {s.label} ({formatDate(s.period_start)} → {formatDate(s.period_end)})
-                    </option>
-                  ))}
-                </select>
+                <div className="relative" style={{ maxWidth: 480 }}>
+                  <button
+                    onClick={() => setSimDropOpen(v => !v)}
+                    className={`w-full flex items-center justify-between gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium transition-colors ${
+                      snapshot
+                        ? (isDinner ? 'border-[#967D62]/60 bg-[#967D62]/10 text-[#F4F1EA]' : 'border-[#967D62]/60 bg-[#967D62]/5 text-[#2C2A28]')
+                        : (isDinner ? 'border-[#334155] text-[#94A3B8] hover:border-[#967D62]/40' : 'border-[#EAE5DA] text-[#8C8A85] hover:border-[#967D62]/40')
+                    }`}
+                  >
+                    <span className="truncate">
+                      {snapshot ? `${snapshot.label} (${formatDate(snapshot.period_start)} → ${formatDate(snapshot.period_end)})` : '— Seleziona un periodo —'}
+                    </span>
+                    <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${simDropOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                  {simDropOpen && (
+                    <div className={`absolute z-50 mt-1 w-full rounded-xl border shadow-xl overflow-hidden ${isDinner ? 'bg-[#1E293B] border-[#334155]' : 'bg-white border-[#EAE5DA]'}`}>
+                      {snapshots.map(s => (
+                        <button
+                          key={s.id}
+                          onClick={() => { setSelectedId(s.id); setSimDropOpen(false); }}
+                          className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${
+                            s.id === selectedId
+                              ? (isDinner ? 'bg-[#967D62]/20 text-[#F4F1EA]' : 'bg-[#967D62]/10 text-[#967D62]')
+                              : (isDinner ? 'text-[#F4F1EA] hover:bg-[#334155]/40' : 'text-[#2C2A28] hover:bg-[#F4F1EA]/60')
+                          }`}
+                        >
+                          <span className="font-semibold">{s.label}</span>
+                          <span className={`ml-2 text-xs ${mutedText}`}>{formatDate(s.period_start)} → {formatDate(s.period_end)}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               )}
             </div>
             {snapshot && modifiedCount > 0 && (
@@ -329,7 +353,7 @@ export function SimulazioneView({
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <h2 className={`text-sm font-bold uppercase tracking-wider ${mutedText}`}>
-                Piatti — {snapshot.data.dishes.length} totali
+                Piatti — {snapshot.data.dishes.filter(d => !isBeverageCategory(d.category)).length} piatti food
               </h2>
               {modifiedCount > 0 && (
                 <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${isDinner ? 'bg-[#967D62]/20 text-[#C4A882]' : 'bg-[#967D62]/10 text-[#967D62]'}`}>
@@ -338,7 +362,7 @@ export function SimulazioneView({
               )}
             </div>
 
-            {snapshot.data.dishes.map(dish => {
+            {snapshot.data.dishes.filter(d => !isBeverageCategory(d.category)).map(dish => {
               const sim = getSimDish(dish);
               const isModified = !!simValues[dish.name];
               const isExpanded = expandedDish === dish.name;
@@ -552,6 +576,102 @@ export function SimulazioneView({
               );
             })}
           </div>
+          {/* Bevande — sezione separata collassabile */}
+          {snapshot.data.dishes.some(d => isBeverageCategory(d.category)) && (
+            <div className={`rounded-xl border ${isDinner ? 'border-[#334155]' : 'border-[#EAE5DA]'}`}>
+              <button
+                onClick={() => setSimBevOpen(v => !v)}
+                className={`w-full flex items-center justify-between px-5 py-3.5 rounded-xl transition-colors ${isDinner ? 'hover:bg-[#334155]/30' : 'hover:bg-[#F4F1EA]/60'}`}
+              >
+                <div className="flex items-center gap-3">
+                  <span className={`text-sm font-bold ${textColor}`}>🍹 Bevande</span>
+                  <span className={`text-xs ${mutedText}`}>Simulazione separata dal food</span>
+                </div>
+                {simBevOpen ? <ChevronUp className={`w-4 h-4 ${mutedText}`} /> : <ChevronDown className={`w-4 h-4 ${mutedText}`} />}
+              </button>
+              {simBevOpen && (
+                <div className={`border-t ${isDinner ? 'border-[#334155]' : 'border-[#EAE5DA]'} space-y-2 p-3`}>
+                  {snapshot.data.dishes.filter(d => isBeverageCategory(d.category)).map(dish => {
+                    const sim = getSimDish(dish);
+                    const isModified = !!simValues[dish.name];
+                    const isExpanded = expandedDish === dish.name;
+                    const simMarginPct = sim.price > 0 ? ((sim.price - sim.ingCost) / sim.price) * 100 : 0;
+                    const simScore = simMarginPct * sim.frequency;
+                    return (
+                      <Card key={dish.name} className={`${cardBg} ${isModified ? (isDinner ? 'ring-1 ring-[#967D62]/40' : 'ring-1 ring-[#967D62]/30') : ''}`}>
+                        <div
+                          className={`flex items-center gap-3 px-4 py-3 cursor-pointer ${rowHover} rounded-xl transition-colors`}
+                          onClick={() => setExpandedDish(isExpanded ? null : dish.name)}
+                        >
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className={`font-semibold text-sm ${textColor}`}>{dish.name}</span>
+                              {isModified && <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${isDinner ? 'bg-[#967D62]/20 text-[#C4A882]' : 'bg-[#967D62]/10 text-[#967D62]'}`}>modificato</span>}
+                            </div>
+                          </div>
+                          <div className="hidden sm:flex items-center gap-4 shrink-0 text-right">
+                            <div>
+                              <p className={`text-[10px] ${mutedText}`}>Prezzo</p>
+                              <p className={`text-sm font-bold ${textColor}`}>€{sim.price.toFixed(2)}</p>
+                            </div>
+                            <div>
+                              <p className={`text-[10px] ${mutedText}`}>Margine</p>
+                              <p className={`text-sm font-bold ${accentColor}`}>{simMarginPct.toFixed(1)}%</p>
+                            </div>
+                            <div>
+                              <p className={`text-[10px] ${mutedText}`}>Ordini</p>
+                              <p className={`text-sm font-bold ${textColor}`}>{sim.frequency}</p>
+                            </div>
+                          </div>
+                          {isModified && (
+                            <button onClick={e => { e.stopPropagation(); resetDish(dish.name); }}
+                              className={`p-1.5 rounded-lg text-xs shrink-0 transition-colors ${isDinner ? 'text-[#94A3B8] hover:text-rose-400' : 'text-[#8C8A85] hover:text-rose-500'}`}>
+                              <RotateCcw className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                          {isExpanded ? <ChevronUp className={`w-4 h-4 shrink-0 ${mutedText}`} /> : <ChevronDown className={`w-4 h-4 shrink-0 ${mutedText}`} />}
+                        </div>
+                        {isExpanded && (
+                          <div className={`px-4 pb-4 border-t ${isDinner ? 'border-[#334155]' : 'border-[#EAE5DA]'} pt-4 space-y-4`}>
+                            {/* Solo prezzo e frequenza per le bevande */}
+                            <div>
+                              <div className="flex items-center justify-between mb-2">
+                                <label className={`text-xs font-semibold uppercase tracking-wider ${mutedText}`}>Prezzo di vendita</label>
+                                <span className={`text-sm font-bold ${textColor}`}>€{sim.price.toFixed(2)}</span>
+                              </div>
+                              <input type="range" min={Math.max(0.5, dish.priceNet * 0.5)} max={dish.priceNet * 2} step={0.1} value={sim.price}
+                                onChange={e => updateSim(dish.name, 'price', parseFloat(e.target.value))}
+                                className={`w-full h-1.5 rounded-full appearance-none cursor-pointer accent-[#967D62]`} />
+                              <div className={`flex justify-between text-[10px] ${mutedText} mt-0.5`}>
+                                <span>-50%</span><span className={accentColor}>Base: €{dish.priceNet.toFixed(2)}</span><span>+100%</span>
+                              </div>
+                            </div>
+                            <div>
+                              <div className="flex items-center justify-between mb-2">
+                                <label className={`text-xs font-semibold uppercase tracking-wider ${mutedText}`}>Frequenza ordini</label>
+                                <span className={`text-sm font-bold ${textColor}`}>{sim.frequency} ordini</span>
+                              </div>
+                              <input type="range" min={0} max={Math.max(dish.frequency * 3, 10)} step={1} value={sim.frequency}
+                                onChange={e => updateSim(dish.name, 'frequency', parseInt(e.target.value))}
+                                className={`w-full h-1.5 rounded-full appearance-none cursor-pointer accent-[#967D62]`} />
+                              <div className={`flex justify-between text-[10px] ${mutedText} mt-0.5`}>
+                                <span>0</span><span className={accentColor}>Base: {dish.frequency}</span><span>×3</span>
+                              </div>
+                            </div>
+                            <div className={`flex items-center gap-6 p-3 rounded-xl border ${isDinner ? 'bg-[#0F172A] border-[#334155]' : 'bg-gray-50 border-[#EAE5DA]'}`}>
+                              <div><p className={`text-[10px] ${mutedText}`}>Margine</p><p className={`text-sm font-bold ${accentColor}`}>{simMarginPct.toFixed(1)}%</p></div>
+                              <div><p className={`text-[10px] ${mutedText}`}>Score</p><p className={`text-sm font-bold ${accentColor}`}>{simScore.toFixed(0)}</p></div>
+                              <div><p className={`text-[10px] ${mutedText}`}>Ricavo</p><p className={`text-sm font-bold ${textColor}`}>€{(sim.price * sim.frequency).toFixed(0)}</p></div>
+                            </div>
+                          </div>
+                        )}
+                      </Card>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
         </>
       )}
     </main>
