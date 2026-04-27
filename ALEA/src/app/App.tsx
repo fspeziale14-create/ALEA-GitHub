@@ -2259,6 +2259,7 @@ function App() {
               setActiveView={setActiveView}
               getFestivitaAvviso={getFestivitaAvviso}
               menuPrices={menuPrices} setMenuPrices={setMenuPrices} saveMenuPrice={saveMenuPrice}
+              supabase={supabase} isLoggedIn={isLoggedIn}
             />
           )}
 
@@ -2504,6 +2505,7 @@ function App() {
                 setActiveView={setActiveView}
                 getFestivitaAvviso={getFestivitaAvviso}
                 menuPrices={menuPrices} setMenuPrices={setMenuPrices} saveMenuPrice={saveMenuPrice}
+                supabase={supabase} isLoggedIn={isLoggedIn}
               />
             </>
           )}
@@ -2574,6 +2576,7 @@ function App() {
                 setActiveView={setActiveView}
                 getFestivitaAvviso={getFestivitaAvviso}
                 menuPrices={menuPrices} setMenuPrices={setMenuPrices} saveMenuPrice={saveMenuPrice}
+                supabase={supabase} isLoggedIn={isLoggedIn}
               />
             </>
           )}
