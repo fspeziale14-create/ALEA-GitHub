@@ -119,7 +119,7 @@ export function DashboardSidebar({ pastShiftsStatus = [], selectedDate, onSelect
                   >
                     <a href={item.url}>
                       <item.icon />
-                      <span>{item.title}</span>
+                      <span className="font-semibold">{item.title}</span>
                     </a>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
