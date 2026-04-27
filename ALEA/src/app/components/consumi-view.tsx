@@ -329,10 +329,11 @@ export function ConsumiView({
                 <p className={`text-sm ${mutedText} py-4 text-center`}>Nessuna registrazione nel periodo selezionato.</p>
               ) : (
                 <div className="space-y-1">
-                  <div className={`grid grid-cols-[auto_1fr_auto_auto_auto] gap-4 pb-2 border-b ${divider} text-xs font-bold uppercase tracking-wider ${mutedText}`}>
+                  {/* Header tabella */}
+                  <div className={`grid grid-cols-[100px_1fr_90px_140px_1fr] gap-3 pb-2 border-b ${divider} text-xs font-bold uppercase tracking-wider ${mutedText}`}>
                     <span>Data</span>
                     <span>Ingrediente</span>
-                    <span className="text-right">Quantità</span>
+                    <span className="text-right">Qtà</span>
                     <span>Categoria</span>
                     <span>Nota</span>
                   </div>
@@ -340,15 +341,15 @@ export function ConsumiView({
                     const meta = categoryMeta[r.category];
                     const Icon = meta.icon;
                     return (
-                      <div key={r.id} className={`grid grid-cols-[auto_1fr_auto_auto_auto] gap-4 py-2 px-1 rounded-lg items-center ${rowHover} transition-colors`}>
-                        <span className={`text-xs ${mutedText} w-20 shrink-0`}>{formatDate(r.recorded_at)}</span>
+                      <div key={r.id} className={`grid grid-cols-[100px_1fr_90px_140px_1fr] gap-3 py-2 px-1 rounded-lg items-center ${rowHover} transition-colors`}>
+                        <span className={`text-xs ${mutedText} shrink-0`}>{formatDate(r.recorded_at)}</span>
                         <span className={`text-sm font-medium truncate ${textColor}`}>{r.ingredient_name}</span>
-                        <span className={`text-sm text-right shrink-0 ${textColor}`}>{r.qty}{r.unit}</span>
+                        <span className={`text-sm text-right shrink-0 font-mono ${textColor}`}>{r.qty}{r.unit}</span>
                         <div className="flex items-center gap-1.5 shrink-0">
-                          <Icon className={`w-3.5 h-3.5 ${meta.color}`} />
-                          <span className={`text-xs ${mutedText} hidden sm:block`}>{meta.label}</span>
+                          <Icon className={`w-3.5 h-3.5 shrink-0 ${meta.color}`} />
+                          <span className={`text-xs ${mutedText}`}>{meta.label}</span>
                         </div>
-                        <span className={`text-xs ${mutedText} truncate max-w-[120px]`}>{r.note ?? '—'}</span>
+                        <span className={`text-xs ${mutedText} truncate`}>{r.note ?? '—'}</span>
                       </div>
                     );
                   })}
