@@ -1889,9 +1889,10 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                 >
                   <Upload className="w-3.5 h-3.5" />
                   Importa CSV / TSV
-                  <span className={`text-[10px] ${mutedText}`}>(colonne: nome, quantità, data, causa, nota)</span>
+                  <span className={`text-[10px] ${mutedText}`}>(nome, quantità, data, causa, nota)</span>
                 </button>
-                <input ref={extraFileRef} type="file" accept=".csv,.tsv,.txt" onChange={handleExtraImport} className="hidden" />
+                <input ref={extraFileRef} type="file" accept=".csv,.tsv,.txt" onChange={e => { handleExtraImport(e); }} className="hidden" />
+                <p className={`text-[10px] mt-1 ${mutedText}`}>Il file viene salvato automaticamente — non serve premere Registra.</p>
               </div>
 
               {/* Feedback */}
