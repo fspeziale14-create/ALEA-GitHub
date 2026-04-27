@@ -1297,7 +1297,7 @@ export function MenuProfitability({
 
           {/* ── RANKING BEVANDE PER FREQUENZA (collassabile) ── */}
           {beverageByFreq.length > 0 && (
-            <div className={`rounded-xl border ${isDinner ? 'border-[#334155]' : 'border-[#EAE5DA]'}`}>
+            <div className={`rounded-xl border-2 ${isDinner ? 'border-[#475569]' : 'border-[#C8C2B8]'}`}>
               <button
                 onClick={() => setBevPortfolioOpen(v => !v)}
                 className={`w-full flex items-center justify-between px-5 py-3.5 rounded-xl transition-colors font-semibold ${isDinner ? 'hover:bg-[#334155]/30' : 'hover:bg-[#F4F1EA]/60'}`}
@@ -1797,7 +1797,7 @@ export function MenuProfitability({
 
           {/* ── BEVANDE: ranking con score (coerente con la sezione frequenze) ── */}
           {rankingBeverages.length > 0 && (
-            <div className={`rounded-xl border ${isDinner ? 'border-[#334155]' : 'border-[#EAE5DA]'}`}>
+            <div className={`rounded-xl border-2 ${isDinner ? 'border-[#475569]' : 'border-[#C8C2B8]'}`}>
               <button
                 onClick={() => setBevRankingOpen(v => !v)}
                 className={`w-full flex items-center justify-between px-5 py-3.5 rounded-xl transition-colors font-semibold ${isDinner ? 'hover:bg-[#334155]/30' : 'hover:bg-[#F4F1EA]/60'}`}
