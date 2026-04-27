@@ -825,11 +825,11 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                                             <div className="pt-2 space-y-2">
                                                 <Button
                                                     onClick={() => { setShowExtraModal(true); setExtraMsg(null); setExtraIngId(''); setExtraQty(''); setExtraNote(''); setExtraDate(new Date().toISOString().split('T')[0]); setExtraCategory('waste'); }}
-                                                    className={`w-full font-semibold bg-[#967D62] hover:bg-[#7A654E] ${isDinner ? 'text-[#F4F1EA]' : 'text-[#F4F1EA]'}`}
+                                                    className={`w-full font-semibold ${isDinner ? 'bg-[#967D62] hover:bg-[#7A654E] text-[#F4F1EA]' : 'bg-[#B89A80] hover:bg-[#967D62] text-white'}`}
                                                 >
-                                                    <Flame className="w-4 h-4 mr-2" /> Registra consumo extra
+                                                    <Flame className="w-4 h-4 mr-2" /> Registra consumi interni
                                                 </Button>
-                                                <Button onClick={() => { setShowVerifyModal(true); setVerifyValues({}); }} className={`w-full font-semibold bg-[#967D62] hover:bg-[#7A654E] ${isDinner ? 'text-[#F4F1EA]' : 'text-[#F4F1EA]'}`}>
+                                                <Button onClick={() => { setShowVerifyModal(true); setVerifyValues({}); }} className={`w-full font-semibold ${isDinner ? 'bg-[#967D62] hover:bg-[#7A654E] text-[#F4F1EA]' : 'bg-[#B89A80] hover:bg-[#967D62] text-white'}`}>
                                                     <CheckCircle2 className="w-4 h-4 mr-2" /> Verifica Quantità
                                                 </Button>
                                             </div>
@@ -1664,7 +1664,7 @@ export function PianificazioneView(props: PianificazioneViewProps) {
             {/* Header */}
             <div className={`flex items-center justify-between px-6 py-4 border-b ${isDinner ? 'border-[#334155]' : 'border-[#EAE5DA]'}`}>
               <div>
-                <h2 className={`text-lg font-bold ${textColor}`}>Registra consumo extra</h2>
+                <h2 className={`text-lg font-bold ${textColor}`}>Registra consumi interni</h2>
                 <p className={`text-xs mt-0.5 ${mutedText}`}>Scarti, pasti personale, consumi operativi. Scala la giacenza automaticamente.</p>
               </div>
               <button onClick={() => setShowExtraModal(false)} className={`p-1.5 rounded-lg transition-colors ${isDinner ? 'hover:bg-[#334155] text-[#94A3B8]' : 'hover:bg-gray-100 text-[#8C8A85]'}`}>
