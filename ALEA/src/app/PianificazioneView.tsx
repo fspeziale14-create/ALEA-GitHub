@@ -205,6 +205,13 @@ export function PianificazioneView(props: PianificazioneViewProps) {
   const [extraSaving, setExtraSaving] = React.useState(false);
   const [extraMsg, setExtraMsg] = React.useState<{ type: 'ok' | 'err'; msg: string } | null>(null);
   const [extraIngDropOpen, setExtraIngDropOpen] = React.useState(false);
+  // Dropdown states for magazzino selects
+  const [ingUnitDropOpen, setIngUnitDropOpen] = React.useState(false);
+  const [ingSupplierDropOpen, setIngSupplierDropOpen] = React.useState(false);
+  const [prepUnitDropOpen, setPrepUnitDropOpen] = React.useState(false);
+  const ingUnitRef = React.useRef<HTMLDivElement>(null);
+  const ingSupplierRef = React.useRef<HTMLDivElement>(null);
+  const prepUnitRef = React.useRef<HTMLDivElement>(null);
   const [extraIngSearch, setExtraIngSearch] = React.useState('');
   const extraIngRef = React.useRef<HTMLDivElement>(null);
   const extraFileRef = React.useRef<HTMLInputElement>(null);
@@ -368,6 +375,17 @@ export function PianificazioneView(props: PianificazioneViewProps) {
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [extraIngDropOpen]);
+
+  // Close dropdowns on outside click
+  React.useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ingUnitRef.current && !ingUnitRef.current.contains(e.target as Node)) setIngUnitDropOpen(false);
+      if (ingSupplierRef.current && !ingSupplierRef.current.contains(e.target as Node)) setIngSupplierDropOpen(false);
+      if (prepUnitRef.current && !prepUnitRef.current.contains(e.target as Node)) setPrepUnitDropOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
   // Handler import file consumi
   const handleExtraImport = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -832,9 +850,24 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                                                         );
                                                     }
                                                     return (
-                                                        <select value={newIngUnit} onChange={e => setNewIngUnit(e.target.value)} className={`w-20 rounded-xl border text-sm px-2 py-1.5 ${isDinner ? 'border-[#334155] bg-[#1E293B] text-[#F4F1EA]' : 'border-[#EAE5DA] bg-white text-[#2C2A28]'}`}>
-                                                            {['g', 'kg', 'ml', 'l', 'cl', 'pz', 'conf'].map(u => <option key={u} value={u}>{u}</option>)}
-                                                        </select>
+                                                        <div className="relative" ref={ingUnitRef}>
+                                                          <button type="button" onClick={() => setIngUnitDropOpen(v => !v)}
+                                                            className={`flex items-center justify-between gap-1 px-2 py-1.5 rounded-xl border text-sm font-semibold w-20 transition-colors ${isDinner ? 'border-[#334155] bg-[#1E293B] text-[#F4F1EA] hover:border-[#967D62]/40' : 'border-[#EAE5DA] bg-white text-[#2C2A28] hover:border-[#967D62]/40'}`}>
+                                                            <span>{newIngUnit}</span>
+                                                            <ChevronDown className={`w-3 h-3 shrink-0 transition-transform ${ingUnitDropOpen ? 'rotate-180' : ''}`} />
+                                                          </button>
+                                                          {ingUnitDropOpen && (
+                                                            <div className={`absolute z-50 mt-1 right-0 rounded-xl border shadow-xl overflow-hidden ${isDinner ? 'bg-[#1E293B] border-[#334155]' : 'bg-white border-[#EAE5DA]'}`}>
+                                                              {['g','kg','ml','l','cl','pz','conf'].map(u => (
+                                                                <button key={u} type="button"
+                                                                  onClick={() => { setNewIngUnit(u); setIngUnitDropOpen(false); }}
+                                                                  className={`w-full text-left px-4 py-2 text-sm transition-colors ${u === newIngUnit ? (isDinner ? 'bg-[#967D62]/20 text-[#F4F1EA]' : 'bg-[#967D62]/10 text-[#967D62]') : (isDinner ? 'text-[#F4F1EA] hover:bg-[#334155]/40' : 'text-[#2C2A28] hover:bg-[#F4F1EA]/60')}`}>
+                                                                  {u}
+                                                                </button>
+                                                              ))}
+                                                            </div>
+                                                          )}
+                                                        </div>
                                                     );
                                                 })()}
                                             </div>
@@ -880,10 +913,29 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                                                         {(newIngSupplierMode === 'new' || existingSuppliers.length === 0) ? (
                                                             <Input placeholder="Nome fornitore" value={newIngSupplierName} onChange={e => setNewIngSupplierName(e.target.value)} className={`w-full ${isDinner ? 'border-[#334155] bg-[#1E293B]' : 'border-[#EAE5DA]'}`} />
                                                         ) : (
-                                                            <select value={newIngSelectedSupplier} onChange={e => setNewIngSelectedSupplier(e.target.value)} className={`w-full rounded-xl border text-sm px-3 py-2 ${isDinner ? 'border-[#334155] bg-[#1E293B] text-[#F4F1EA]' : 'border-[#EAE5DA] bg-white text-[#2C2A28]'}`}>
-                                                                <option value="">Seleziona fornitore</option>
-                                                                {existingSuppliers.map(s => <option key={s.name} value={s.name}>{s.name} ({s.qtyPerBox}{s.unit || newIngUnit}/scatolone)</option>)}
-                                                            </select>
+                                                            <div className="relative" ref={ingSupplierRef}>
+                                                              <button type="button" onClick={() => setIngSupplierDropOpen(v => !v)}
+                                                                className={`w-full flex items-center justify-between gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium transition-colors ${newIngSelectedSupplier ? (isDinner ? 'border-[#967D62]/60 bg-[#967D62]/10 text-[#F4F1EA]' : 'border-[#967D62]/60 bg-[#967D62]/5 text-[#2C2A28]') : (isDinner ? 'border-[#334155] text-[#94A3B8] hover:border-[#967D62]/40' : 'border-[#EAE5DA] text-[#8C8A85] hover:border-[#967D62]/40')}`}>
+                                                                <span className="truncate">{newIngSelectedSupplier || 'Seleziona fornitore'}</span>
+                                                                <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${ingSupplierDropOpen ? 'rotate-180' : ''}`} />
+                                                              </button>
+                                                              {ingSupplierDropOpen && (
+                                                                <div className={`absolute z-50 mt-1 w-full rounded-xl border shadow-xl overflow-hidden ${isDinner ? 'bg-[#1E293B] border-[#334155]' : 'bg-white border-[#EAE5DA]'}`}>
+                                                                  <button type="button" onClick={() => { setNewIngSelectedSupplier(''); setIngSupplierDropOpen(false); }}
+                                                                    className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${!newIngSelectedSupplier ? (isDinner ? 'bg-[#967D62]/20 text-[#F4F1EA]' : 'bg-[#967D62]/10 text-[#967D62]') : (isDinner ? 'text-[#94A3B8] hover:bg-[#334155]/40' : 'text-[#8C8A85] hover:bg-[#F4F1EA]/60')}`}>
+                                                                    Seleziona fornitore
+                                                                  </button>
+                                                                  {existingSuppliers.map(s => (
+                                                                    <button key={s.name} type="button"
+                                                                      onClick={() => { setNewIngSelectedSupplier(s.name); setIngSupplierDropOpen(false); }}
+                                                                      className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${s.name === newIngSelectedSupplier ? (isDinner ? 'bg-[#967D62]/20 text-[#F4F1EA]' : 'bg-[#967D62]/10 text-[#967D62]') : (isDinner ? 'text-[#F4F1EA] hover:bg-[#334155]/40' : 'text-[#2C2A28] hover:bg-[#F4F1EA]/60')}`}>
+                                                                      <span className="font-semibold">{s.name}</span>
+                                                                      <span className={`ml-2 text-xs ${isDinner ? 'text-[#94A3B8]' : 'text-[#8C8A85]'}`}>({s.qtyPerBox}{s.unit || newIngUnit}/scatolone)</span>
+                                                                    </button>
+                                                                  ))}
+                                                                </div>
+                                                              )}
+                                                            </div>
                                                         )}
                                                         {(newIngSupplierMode === 'new' || existingSuppliers.length === 0) && (
                                                             <div className="flex gap-2 items-end">
@@ -1097,9 +1149,24 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                                                     <Label className={`text-xs ${mutedText}`}>Resa (quantità prodotta per batch)</Label>
                                                     <Input type="number" placeholder="Es. 500" value={newPrepYieldQty} onChange={e => setNewPrepYieldQty(e.target.value)} className={isDinner ? 'border-[#334155] bg-[#1E293B]' : 'border-[#EAE5DA]'} />
                                                 </div>
-                                                <select value={newPrepYieldUnit} onChange={e => setNewPrepYieldUnit(e.target.value)} className={`w-20 rounded-xl border text-sm px-2 py-2 ${isDinner ? 'border-[#334155] bg-[#1E293B] text-[#F4F1EA]' : 'border-[#EAE5DA] bg-white text-[#2C2A28]'}`}>
-                                                    {['g', 'kg', 'ml', 'l', 'cl', 'pz', 'conf'].map(u => <option key={u} value={u}>{u}</option>)}
-                                                </select>
+                                                <div className="relative" ref={prepUnitRef}>
+                                                  <button type="button" onClick={() => setPrepUnitDropOpen(v => !v)}
+                                                    className={`flex items-center justify-between gap-1 px-2 py-2 rounded-xl border text-sm font-semibold w-20 transition-colors ${isDinner ? 'border-[#334155] bg-[#1E293B] text-[#F4F1EA] hover:border-[#967D62]/40' : 'border-[#EAE5DA] bg-white text-[#2C2A28] hover:border-[#967D62]/40'}`}>
+                                                    <span>{newPrepYieldUnit}</span>
+                                                    <ChevronDown className={`w-3 h-3 shrink-0 transition-transform ${prepUnitDropOpen ? 'rotate-180' : ''}`} />
+                                                  </button>
+                                                  {prepUnitDropOpen && (
+                                                    <div className={`absolute z-50 mt-1 right-0 rounded-xl border shadow-xl overflow-hidden ${isDinner ? 'bg-[#1E293B] border-[#334155]' : 'bg-white border-[#EAE5DA]'}`}>
+                                                      {['g','kg','ml','l','cl','pz','conf'].map(u => (
+                                                        <button key={u} type="button"
+                                                          onClick={() => { setNewPrepYieldUnit(u); setPrepUnitDropOpen(false); }}
+                                                          className={`w-full text-left px-4 py-2 text-sm transition-colors ${u === newPrepYieldUnit ? (isDinner ? 'bg-[#967D62]/20 text-[#F4F1EA]' : 'bg-[#967D62]/10 text-[#967D62]') : (isDinner ? 'text-[#F4F1EA] hover:bg-[#334155]/40' : 'text-[#2C2A28] hover:bg-[#F4F1EA]/60')}`}>
+                                                          {u}
+                                                        </button>
+                                                      ))}
+                                                    </div>
+                                                  )}
+                                                </div>
                                             </div>
                                             <Button onClick={() => {
                                                 if (!newPrepName || !newPrepYieldQty) return;
@@ -1244,7 +1311,7 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                                                                             <div className="flex gap-1 items-center">
                                                                                 <Input type="number" placeholder="Qty" value={qtyPart || ''} onChange={e => setPrepIngQty(`${e.target.value}|${currentUnit || baseUnit}`)} className={`w-16 text-xs ${isDinner ? 'border-[#334155] bg-[#1E293B]' : 'border-[#EAE5DA]'}`} />
                                                                                 {compatUnits.length > 1 ? (
-                                                                                    <select value={currentUnit} onChange={e => setPrepIngQty(`${qtyPart || ''}|${e.target.value}`)} className={`w-14 rounded-xl border text-xs px-1 py-1.5 ${isDinner ? 'border-[#334155] bg-[#1E293B] text-[#F4F1EA]' : 'border-[#EAE5DA] bg-white text-[#2C2A28]'}`}>
+                                                                                    <select value={currentUnit} onChange={e => setPrepIngQty(`${qtyPart || ''}|${e.target.value}`)} className={`w-14 rounded-xl border text-xs px-1 py-1.5 cursor-pointer ${isDinner ? 'border-[#334155] bg-[#1E293B] text-[#F4F1EA]' : 'border-[#EAE5DA] bg-white text-[#2C2A28]'}`}>
                                                                                         {compatUnits.map(u => <option key={u} value={u}>{u}</option>)}
                                                                                     </select>
                                                                                 ) : (
@@ -1490,7 +1557,7 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                                                                                 <div className="flex gap-1 items-center">
                                                                                     <Input type="number" placeholder="Qty" value={editingRecipeQty} onChange={e => setEditingRecipeQty(e.target.value)} className={`w-16 text-xs ${isDinner ? 'border-[#334155] bg-[#1E293B]' : 'border-[#EAE5DA]'}`} />
                                                                                     {compatUnits.length > 1 ? (
-                                                                                        <select value={editingRecipePcsYield || baseUnit} onChange={e => setEditingRecipePcsYield(e.target.value)} className={`w-14 rounded-xl border text-xs px-1 py-1.5 ${isDinner ? 'border-[#334155] bg-[#1E293B] text-[#F4F1EA]' : 'border-[#EAE5DA] bg-white text-[#2C2A28]'}`}>
+                                                                                        <select value={editingRecipePcsYield || baseUnit} onChange={e => setEditingRecipePcsYield(e.target.value)} className={`w-14 rounded-xl border text-xs px-1 py-1.5 cursor-pointer ${isDinner ? 'border-[#334155] bg-[#1E293B] text-[#F4F1EA]' : 'border-[#EAE5DA] bg-white text-[#2C2A28]'}`}>
                                                                                             {compatUnits.map(u => <option key={u} value={u}>{u}</option>)}
                                                                                         </select>
                                                                                     ) : (
@@ -1981,7 +2048,7 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                         <select
                           value={extraUnit || ing?.unit || ''}
                           onChange={e => setExtraUnit(e.target.value)}
-                          className={`px-3 py-2 rounded-xl border text-sm font-semibold ${isDinner ? 'bg-[#0F172A] border-[#334155] text-[#F4F1EA]' : 'bg-white border-[#EAE5DA] text-[#2C2A28]'}`}
+                          className={`px-3 py-2 rounded-xl border text-sm font-semibold cursor-pointer ${isDinner ? 'bg-[#0F172A] border-[#334155] text-[#F4F1EA]' : 'bg-white border-[#EAE5DA] text-[#2C2A28]'}`}
                         >
                           {units.map(u => <option key={u} value={u}>{u}</option>)}
                         </select>
