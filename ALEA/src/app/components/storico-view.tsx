@@ -72,6 +72,12 @@ const quadrantColor = (q: string, isDinner: boolean) => {
   return isDinner ? 'text-rose-400' : 'text-rose-600';
 };
 
+const getCompareValue = (d: DishSnapshot, sort: 'score' | 'guadagno' | 'ricavo') => {
+  if (sort === 'score')    return d.score ?? 0;
+  if (sort === 'ricavo')   return d.priceNet * d.frequency;
+  return (d.priceNet - d.ingredientCost) * d.frequency;
+};
+
 const getDetailValue = (d: DishSnapshot, sort: 'score' | 'guadagno' | 'ricavo') => {
   if (sort === 'score')    return d.score ?? 0;
   if (sort === 'ricavo')   return d.priceNet * d.frequency;
@@ -105,6 +111,7 @@ export function StoricoView({
   const [compareDropA, setCompareDropA] = useState(false);
   const [compareDropB, setCompareDropB] = useState(false);
   const [showComparison, setShowComparison] = useState(false);
+  const [compareSort, setCompareSort] = useState<'score' | 'guadagno' | 'ricavo'>('score');
 
   // Trend: piatti selezionati per i grafici
   const [trendDishes, setTrendDishes] = useState<string[]>([]);
@@ -474,18 +481,45 @@ export function StoricoView({
                 <p className={`text-sm ${mutedText} py-4 text-center`}>Nessuna variazione significativa tra i due periodi.</p>
               ) : (
                 <div className="space-y-2">
+                  {/* Selettore metrica */}
+                  <div className="flex items-center justify-between mb-3">
+                    <span className={`text-xs ${mutedText}`}>Ordina e visualizza per:</span>
+                    <div className={`flex gap-1 p-0.5 rounded-lg border ${isDinner ? 'bg-[#0F172A] border-[#334155]' : 'bg-black/5 border-[#EAE5DA]'}`}>
+                      {([
+                        { key: 'score',    label: 'Score' },
+                        { key: 'guadagno', label: 'Guadagno' },
+                        { key: 'ricavo',   label: 'Ricavo' },
+                      ] as const).map(opt => (
+                        <button key={opt.key} onClick={() => setCompareSort(opt.key)}
+                          className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-all ${
+                            compareSort === opt.key
+                              ? (isDinner ? 'bg-[#967D62] text-white' : 'bg-white text-[#967D62] shadow-sm border border-[#EAE5DA]')
+                              : `${mutedText} hover:text-[#967D62]`
+                          }`}>{opt.label}</button>
+                      ))}
+                    </div>
+                  </div>
                   {/* Header */}
                   <div className={`grid grid-cols-[1fr_auto_auto_auto_auto] gap-4 pb-2 border-b ${divider} text-xs font-bold uppercase tracking-wider ${mutedText}`}>
                     <span>Piatto</span>
                     <span className="text-right w-20">Margine</span>
                     <span className="text-right w-16">Ordini</span>
-                    <span className="text-right w-16">Score</span>
+                    <span className="text-right w-20">{compareSort === 'score' ? 'Score' : compareSort === 'guadagno' ? 'Guadagno' : 'Ricavo'}</span>
                     <span className="text-right w-28">Quadrante</span>
                   </div>
-                  {comparison.map(c => {
+                  {[...comparison]
+                    .sort((a, b) => Math.abs(getCompareValue(b.b, compareSort) - getCompareValue(b.a, compareSort)) - Math.abs(getCompareValue(a.b, compareSort) - getCompareValue(a.a, compareSort)))
+                    .map(c => {
                     const marginUp = c.marginDiff > 0;
                     const freqUp = c.freqDiff > 0;
-                    const scoreUp = c.scoreDiff > 0;
+                    const metricDiff = getCompareValue(c.b, compareSort) - getCompareValue(c.a, compareSort);
+                    const metricUp = metricDiff > 0;
+                    const metricLabel = compareSort === 'score'
+                      ? `${metricDiff > 0 ? '+' : ''}${metricDiff.toFixed(0)}`
+                      : `${metricDiff > 0 ? '+' : ''}€${metricDiff.toFixed(0)}`;
+                    const metricBase = compareSort === 'score'
+                      ? `${getCompareValue(c.a, compareSort).toFixed(0)} → ${getCompareValue(c.b, compareSort).toFixed(0)}`
+                      : `€${getCompareValue(c.a, compareSort).toFixed(0)} → €${getCompareValue(c.b, compareSort).toFixed(0)}`;
                     return (
                       <div key={c.name} className={`grid grid-cols-[1fr_auto_auto_auto_auto] gap-4 py-2.5 px-1 rounded-lg items-center ${rowHover} transition-colors`}>
                         <div>
@@ -506,12 +540,12 @@ export function StoricoView({
                           </p>
                           <p className={`text-xs ${mutedText}`}>{c.a.frequency} → {c.b.frequency}</p>
                         </div>
-                        {/* Score */}
-                        <div className="text-right w-16">
-                          <p className={`text-sm font-bold ${scoreUp ? accentColor : c.scoreDiff < 0 ? (isDinner ? 'text-rose-400' : 'text-rose-600') : mutedText}`}>
-                            {c.scoreDiff > 0 ? '+' : ''}{c.scoreDiff.toFixed(0)}
+                        {/* Metrica selezionata */}
+                        <div className="text-right w-20">
+                          <p className={`text-sm font-bold ${metricUp ? accentColor : metricDiff < 0 ? (isDinner ? 'text-rose-400' : 'text-rose-600') : mutedText}`}>
+                            {metricLabel}
                           </p>
-                          <p className={`text-xs ${mutedText}`}>{(c.a.score ?? 0).toFixed(0)} → {(c.b.score ?? 0).toFixed(0)}</p>
+                          <p className={`text-xs ${mutedText}`}>{metricBase}</p>
                         </div>
                         {/* Quadrante */}
                         <div className="text-right w-28">
