@@ -19,6 +19,7 @@ import { DashboardView } from './DashboardView';
 import { PianificazioneView } from './PianificazioneView';
 import { ImpostazioniView } from './ImpostazioniView';
 import { Separator } from './components/ui/separator';
+import { AnimatePresence, motion } from 'motion/react';
 
 // ── SUPABASE ──────────────────────────────────────────────────
 const supabase = createClient(
@@ -134,9 +135,26 @@ function App() {
   const [activeView, setActiveView] = useState<string>("Dashboard");
   const [menuSubView, setMenuSubView] = useState<'landing' | 'inventario' | 'ricette' | 'redditività' | 'storico' | 'simulazione' | 'consumi'>('landing');
 
+  // ── ANIMAZIONI NAVIGAZIONE ───────────────────────────────────
+  const VIEW_ORDER = ["Dashboard", "Pianificazione", "Menu", "Recensioni", "Impostazioni"];
+  const MENU_SUB_ORDER = ['landing', 'inventario', 'ricette', 'consumi', 'redditività', 'storico', 'simulazione'];
+
+  const [navDirection, setNavDirection] = useState<1 | -1>(1);
+  const [menuNavDirection, setMenuNavDirection] = useState<1 | -1>(1);
+
   const handleViewChange = (view: string) => {
+    const prevIdx = VIEW_ORDER.indexOf(activeView);
+    const nextIdx = VIEW_ORDER.indexOf(view);
+    setNavDirection(nextIdx >= prevIdx ? 1 : -1);
     setActiveView(view);
     if (view !== "Menu") setMenuSubView('landing');
+  };
+
+  const handleMenuSubViewChange = (sub: typeof menuSubView) => {
+    const prevIdx = MENU_SUB_ORDER.indexOf(menuSubView);
+    const nextIdx = MENU_SUB_ORDER.indexOf(sub);
+    setMenuNavDirection(nextIdx >= prevIdx ? 1 : -1);
+    setMenuSubView(sub);
   };
   const [shift, setShift] = useState<ShiftType>('pranzo');
   const [bookedGuests, setBookedGuests] = useState<string>('');
@@ -2175,6 +2193,23 @@ function App() {
             </div>
           </header>
           
+          {/* ── ANIMATED VIEWS WRAPPER ─────────────────────────── */}
+          <AnimatePresence mode="wait" initial={false} custom={navDirection}>
+          <motion.div
+            key={activeView}
+            custom={navDirection}
+            variants={{
+              enter: (dir: number) => ({ opacity: 0, x: dir * 40 }),
+              center: { opacity: 1, x: 0 },
+              exit: (dir: number) => ({ opacity: 0, x: dir * -40 }),
+            }}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={{ duration: 0.28, ease: [0.4, 0, 0.2, 1] }}
+            className="flex-1 flex flex-col min-h-0 overflow-y-auto overflow-x-hidden [&::-webkit-scrollbar]:hidden [scrollbar-width:none]"
+          >
+
           {/* ========== GESTIONE SALA (GESTIONALE - senza ordini) ========== */}
           {activeView === "Gestione Sala" && (
              <main className="flex-1 p-4 sm:p-6 md:p-8 w-full max-w-[1600px] mx-auto h-[calc(100vh-4rem)] flex flex-col relative overflow-y-auto overflow-x-hidden">
@@ -2336,7 +2371,23 @@ function App() {
           )}
 
           {/* ========== MENU ========== */}
-          {activeView === "Menu" && menuSubView === 'landing' && (
+          {activeView === "Menu" && (
+          <AnimatePresence mode="wait" initial={false} custom={menuNavDirection}>
+          <motion.div
+            key={menuSubView}
+            custom={menuNavDirection}
+            variants={{
+              enter: (dir: number) => ({ opacity: 0, x: dir * 24 }),
+              center: { opacity: 1, x: 0 },
+              exit: (dir: number) => ({ opacity: 0, x: dir * -24 }),
+            }}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+            className="flex-1 flex flex-col min-h-0"
+          >
+          {menuSubView === 'landing' && (
             <main className="flex-1 flex flex-col p-6 md:p-8 max-w-6xl mx-auto w-full">
               <div>
                 <h1 className={`text-3xl font-bold tracking-tight ${textColor}`}>Menu</h1>
@@ -2360,7 +2411,7 @@ function App() {
                     rows[rowIdx].push(
                       <button
                         key={card.key}
-                        onClick={() => setMenuSubView(card.key as any)}
+                        onClick={() => handleMenuSubViewChange(card.key as any)}
                         className={`group text-left p-8 rounded-2xl border transition-all duration-200 hover:shadow-xl hover:-translate-y-1 flex flex-col ${
                           isDinner ? 'bg-[#1E293B] border-[#334155] hover:border-[#967D62]' : 'bg-[#FDFAF5] border-[#EAE5DA] hover:border-[#967D62] hover:bg-white'
                         }`}
@@ -2387,11 +2438,11 @@ function App() {
           )}
 
           {/* ========== MENU / INVENTARIO ========== */}
-          {activeView === "Menu" && menuSubView === 'inventario' && (
+          {menuSubView === 'inventario' && (
             <>
               <div className={`flex items-center gap-3 px-6 pt-6 pb-2 max-w-6xl mx-auto w-full`}>
                 <button
-                  onClick={() => setMenuSubView('landing')}
+                  onClick={() => handleMenuSubViewChange('landing')}
                   className={`flex items-center gap-1.5 text-sm font-semibold transition-colors ${isDinner ? 'text-[#C4A882] hover:text-[#F4F1EA]' : 'text-[#967D62] hover:text-[#2C2A28]'}`}
                 >
                   <ArrowLeft className="w-4 h-4" /> Menu
@@ -2458,11 +2509,11 @@ function App() {
           )}
 
           {/* ========== MENU / RICETTE ========== */}
-          {activeView === "Menu" && menuSubView === 'ricette' && (
+          {menuSubView === 'ricette' && (
             <>
               <div className={`flex items-center gap-3 px-6 pt-6 pb-2 max-w-6xl mx-auto w-full`}>
                 <button
-                  onClick={() => setMenuSubView('landing')}
+                  onClick={() => handleMenuSubViewChange('landing')}
                   className={`flex items-center gap-1.5 text-sm font-semibold transition-colors ${isDinner ? 'text-[#C4A882] hover:text-[#F4F1EA]' : 'text-[#967D62] hover:text-[#2C2A28]'}`}
                 >
                   <ArrowLeft className="w-4 h-4" /> Menu
@@ -2529,10 +2580,10 @@ function App() {
           )}
 
           {/* ========== MENU / CONSUMI INTERNI ========== */}
-          {activeView === "Menu" && menuSubView === 'consumi' && (
+          {menuSubView === 'consumi' && (
             <>
               <div className={`flex items-center gap-3 px-6 pt-6 pb-2 max-w-6xl mx-auto w-full`}>
-                <button onClick={() => setMenuSubView('landing')} className={`flex items-center gap-1.5 text-sm font-medium ${mutedText} hover:${textColor} transition-colors`}>
+                <button onClick={() => handleMenuSubViewChange('landing')} className={`flex items-center gap-1.5 text-sm font-medium ${mutedText} hover:${textColor} transition-colors`}>
                   <ArrowLeft className="w-4 h-4" /> Menu
                 </button>
                 <span className={mutedText}>/</span>
@@ -2551,10 +2602,10 @@ function App() {
           )}
 
           {/* ========== MENU / STORICO ========== */}
-          {activeView === "Menu" && menuSubView === 'storico' && (
+          {menuSubView === 'storico' && (
             <>
               <div className={`flex items-center gap-3 px-6 pt-6 pb-2 max-w-6xl mx-auto w-full`}>
-                <button onClick={() => setMenuSubView('landing')} className={`flex items-center gap-1.5 text-sm font-medium ${mutedText} hover:${textColor} transition-colors`}>
+                <button onClick={() => handleMenuSubViewChange('landing')} className={`flex items-center gap-1.5 text-sm font-medium ${mutedText} hover:${textColor} transition-colors`}>
                   <ArrowLeft className="w-4 h-4" /> Menu
                 </button>
                 <span className={mutedText}>/</span>
@@ -2573,10 +2624,10 @@ function App() {
           )}
 
           {/* ========== MENU / SIMULAZIONE ========== */}
-          {activeView === "Menu" && menuSubView === 'simulazione' && (
+          {menuSubView === 'simulazione' && (
             <>
               <div className={`flex items-center gap-3 px-6 pt-6 pb-2 max-w-6xl mx-auto w-full`}>
-                <button onClick={() => setMenuSubView('landing')} className={`flex items-center gap-1.5 text-sm font-medium ${mutedText} hover:${textColor} transition-colors`}>
+                <button onClick={() => handleMenuSubViewChange('landing')} className={`flex items-center gap-1.5 text-sm font-medium ${mutedText} hover:${textColor} transition-colors`}>
                   <ArrowLeft className="w-4 h-4" /> Menu
                 </button>
                 <span className={mutedText}>/</span>
@@ -2595,11 +2646,11 @@ function App() {
           )}
 
           {/* ========== MENU / REDDITIVITÀ ========== */}
-          {activeView === "Menu" && menuSubView === 'redditività' && (
+          {menuSubView === 'redditività' && (
             <>
               <div className={`flex items-center gap-3 px-6 pt-6 pb-2 max-w-6xl mx-auto w-full`}>
                 <button
-                  onClick={() => setMenuSubView('landing')}
+                  onClick={() => handleMenuSubViewChange('landing')}
                   className={`flex items-center gap-1.5 text-sm font-semibold transition-colors ${isDinner ? 'text-[#C4A882] hover:text-[#F4F1EA]' : 'text-[#967D62] hover:text-[#2C2A28]'}`}
                 >
                   <ArrowLeft className="w-4 h-4" /> Menu
@@ -2618,6 +2669,12 @@ function App() {
               />
             </>
           )}
+          </motion.div>
+          </AnimatePresence>
+          )}
+
+          </motion.div>
+          </AnimatePresence>
 
         </SidebarInset>
       </SidebarProvider>
