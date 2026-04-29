@@ -175,7 +175,7 @@ export function StoricoView({
     }>;
   };
 
-  const comparison = compareMode ? buildComparison() : null;
+  const comparison = (showComparison && compareA && compareB) ? buildComparison() : null;
 
   // ── TREND HELPERS ────────────────────────────────────────────
   // Snapshots ordinati cronologicamente per i grafici
