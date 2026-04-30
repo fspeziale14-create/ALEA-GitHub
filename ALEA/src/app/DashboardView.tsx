@@ -1,5 +1,5 @@
-import { useState, useId, useRef } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
+import { useState } from 'react';
+import { motion } from 'motion/react';
 
 const pageStaggerVariants = {
   hidden: {},
@@ -10,8 +10,7 @@ const si = {
   show: { opacity: 1, y: 0, transition: { duration: 0.3, ease: [0.4, 0, 0.2, 1] as any } },
 };
 function PS({ children, className }: { children: React.ReactNode; className?: string }) {
-  const key = useRef(Math.random()).current;
-  return <motion.div key={key} variants={pageStaggerVariants} initial="hidden" animate="show" className={className}>{children}</motion.div>;
+  return <motion.div variants={pageStaggerVariants} initial="hidden" animate="show" className={className}>{children}</motion.div>;
 }
 function SI({ children, className }: { children: React.ReactNode; className?: string }) {
   return <motion.div variants={si} className={className}>{children}</motion.div>;
