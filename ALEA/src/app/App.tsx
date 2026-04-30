@@ -1,7 +1,7 @@
 import { prevediGiorno, prevediSettimana, calcolaAttendibilita, AttendibilitaResult, isShiftFinished, getMeteoItaliano, ST_STOR_STATS, getFestivitaAvviso } from './engine';
 import { convocazione, convocazioneSettimanale, convocazioneCuochi, convocazioneCuochiSettimanale } from './engine';
 import { MENU_CATEGORIES, MENU_PRICES, BEVERAGE_COURSES, weekDaysOrdered, mapDays } from './constants';
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import React from 'react';
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 import { Activity, Cloud, CloudRain, Users, TrendingUp, Sun, Moon, CalendarCheck, CheckCircle2, ClipboardCheck, UsersRound, Zap, CalendarDays, Clock, ChefHat, ConciergeBell, Plus, Trash2, AlertTriangle, PiggyBank, CalendarRange, Pencil, LayoutGrid, ArrowRightCircle, Utensils, Boxes, Loader2, Settings2, BookOpen, X, Check, XCircle, ChevronRight, Edit3, ChevronDown, ChevronUp, UserCog, CookingPot, ClipboardList, ArrowLeft, Star, History, BarChart2, Target, TrendingDown, ArrowUp, ArrowDown, Minus, Flame } from 'lucide-react';
@@ -23,22 +23,33 @@ import { Separator } from './components/ui/separator';
 import { AnimatePresence, motion } from 'motion/react';
 
 // ── ANIMAZIONI STAGGER ───────────────────────────────────────
-import { animate as motionAnimate } from 'motion';
+const staggerCSS = `
+@keyframes alea-si {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.alea-si {
+  animation: alea-si 0.32s cubic-bezier(0.4,0,0.2,1) both;
+}
+`;
+if (typeof document !== 'undefined' && !document.getElementById('alea-stagger-style')) {
+  const s = document.createElement('style');
+  s.id = 'alea-stagger-style';
+  s.textContent = staggerCSS;
+  document.head.appendChild(s);
+}
 function PageStagger({ children, className }: { children: React.ReactNode; className?: string }) {
   return <div className={className}>{children}</div>;
 }
 function SI({ children, className, i = 0 }: { children: React.ReactNode; className?: string; i?: number }) {
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const refCb = useCallback((el: HTMLDivElement | null) => {
-    if (!el) return;
-    el.style.opacity = '0';
-    el.style.transform = 'translateY(20px)';
-    if (timerRef.current) clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(() => {
-      motionAnimate(el, { opacity: 1, y: 0 }, { duration: 0.32, ease: [0.4, 0, 0.2, 1] });
-    }, i * 100);
-  }, [i]);
-  return <div ref={refCb} className={className}>{children}</div>;
+  return (
+    <div
+      className={`alea-si${className ? ' ' + className : ''}`}
+      style={{ animationDelay: `${i * 0.1}s` }}
+    >
+      {children}
+    </div>
+  );
 }
 
 // ── SUPABASE ──────────────────────────────────────────────────
@@ -2232,14 +2243,14 @@ function App() {
             key={activeView}
             custom={navDirection}
             variants={{
-              enter: (dir: number) => ({ y: dir > 0 ? '60%' : '-60%' }),
+              enter: (dir: number) => ({ y: dir > 0 ? '100%' : '-100%' }),
               center: { y: '0%' },
-              exit: { opacity: 0 },
+              exit: (dir: number) => ({ y: dir > 0 ? '-100%' : '100%' }),
             }}
             initial="enter"
             animate="center"
             exit="exit"
-            transition={{ duration: 0.38, ease: [0.4, 0, 0.2, 1], exit: { duration: 0.08 } }}
+            transition={{ duration: 0.32, ease: [0.4, 0, 0.2, 1] }}
             style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflowY: 'auto', overflowX: 'hidden' }}
             className="[&::-webkit-scrollbar]:hidden [scrollbar-width:none] flex flex-col"
           >
