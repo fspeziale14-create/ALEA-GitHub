@@ -1,7 +1,7 @@
 import { prevediGiorno, prevediSettimana, calcolaAttendibilita, AttendibilitaResult, isShiftFinished, getMeteoItaliano, ST_STOR_STATS, getFestivitaAvviso } from './engine';
 import { convocazione, convocazioneSettimanale, convocazioneCuochi, convocazioneCuochiSettimanale } from './engine';
 import { MENU_CATEGORIES, MENU_PRICES, BEVERAGE_COURSES, weekDaysOrdered, mapDays } from './constants';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import React from 'react';
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 import { Activity, Cloud, CloudRain, Users, TrendingUp, Sun, Moon, CalendarCheck, CheckCircle2, ClipboardCheck, UsersRound, Zap, CalendarDays, Clock, ChefHat, ConciergeBell, Plus, Trash2, AlertTriangle, PiggyBank, CalendarRange, Pencil, LayoutGrid, ArrowRightCircle, Utensils, Boxes, Loader2, Settings2, BookOpen, X, Check, XCircle, ChevronRight, Edit3, ChevronDown, ChevronUp, UserCog, CookingPot, ClipboardList, ArrowLeft, Star, History, BarChart2, Target, TrendingDown, ArrowUp, ArrowDown, Minus, Flame } from 'lucide-react';
@@ -32,10 +32,8 @@ const staggerItemVariants = {
   show: { opacity: 1, y: 0, transition: { duration: 0.3, ease: [0.4, 0, 0.2, 1] } },
 };
 function PageStagger({ children, className }: { children: React.ReactNode; className?: string }) {
-  const animKey = useRef(Math.random()).current;
   return (
     <motion.div
-      key={animKey}
       variants={pageStaggerVariants}
       initial="hidden"
       animate="show"
@@ -2352,6 +2350,7 @@ function App() {
           {/* ========== DASHBOARD + PRENOTAZIONI ========== */}
           {(activeView === "Dashboard" || activeView === "Prenotazioni") && (
             <DashboardView
+              key={activeView}
               isDinner={isDinner} textColor={textColor} mutedText={mutedText}
               cardBg={cardBg} accentColor={accentColor} accentBg={accentBg} bgColor={bgColor}
               selectedDate={selectedDate} shift={shift}
@@ -2384,6 +2383,7 @@ function App() {
           {/* ========== IMPOSTAZIONI ========== */}
           {activeView === "Impostazioni" && (
             <ImpostazioniView
+              key="impostazioni"
               isDinner={isDinner} textColor={textColor} mutedText={mutedText}
               cardBg={cardBg} accentColor={accentColor}
               waiterRatio={waiterRatio} setWaiterRatio={setWaiterRatio}
