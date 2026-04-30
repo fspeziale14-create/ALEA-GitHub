@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useCallback, useRef } from 'react';
 import { animate } from 'motion';
 import {
   Users, Clock, Pencil, ChefHat, ConciergeBell
@@ -11,19 +11,18 @@ import { Separator } from './components/ui/separator';
 import { weekDaysOrdered } from './constants';
 
 function SI({ children, className, i = 0 }: { children: React.ReactNode; className?: string; i?: number }) {
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!ref.current) return;
-    const el = ref.current;
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const refCb = useCallback((el: HTMLDivElement | null) => {
+    if (!el) return;
     el.style.opacity = '0';
     el.style.transform = 'translateY(20px)';
-    const t = setTimeout(() => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => {
       animate(el, { opacity: 1, y: 0 }, { duration: 0.32, ease: [0.4, 0, 0.2, 1] });
     }, i * 100);
-    return () => clearTimeout(t);
   }, [i]);
   return (
-    <div ref={ref} className={className}>
+    <div ref={refCb} className={className}>
       {children}
     </div>
   );
