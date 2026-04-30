@@ -2112,9 +2112,22 @@ function App() {
         <SidebarInset className={`w-full h-full overflow-x-hidden overflow-y-auto [&::-webkit-scrollbar]:hidden [scrollbar-width:none] ${bgColor} transition-colors duration-500`}>
           
           {/* MODALE GESTIONE MENU */}
+          <AnimatePresence>
           {isMenuModalOpen && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-                  <div className={`relative w-full max-w-4xl max-h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden ${isDinner ? 'bg-[#0F172A] border border-[#334155]' : 'bg-[#F4F1EA] border border-[#EAE5DA]'}`}>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.18 }}
+                className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+              >
+                  <motion.div
+                    initial={{ scale: 0.92, opacity: 0, y: 12 }}
+                    animate={{ scale: 1, opacity: 1, y: 0 }}
+                    exit={{ scale: 0.92, opacity: 0, y: 12 }}
+                    transition={{ duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
+                    className={`relative w-full max-w-4xl max-h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden ${isDinner ? 'bg-[#0F172A] border border-[#334155]' : 'bg-[#F4F1EA] border border-[#EAE5DA]'}`}
+                  >
                       <div className={`flex items-center justify-between p-6 border-b shrink-0 ${isDinner ? 'border-[#334155] bg-[#1E293B]' : 'border-[#EAE5DA] bg-white'}`}>
                           <div>
                               <h2 className={`text-2xl font-bold tracking-tight ${textColor}`}>Gestione Disponibilità Menu</h2>
@@ -2147,11 +2160,10 @@ function App() {
                       <div className={`p-4 border-t shrink-0 flex justify-end ${isDinner ? 'border-[#334155] bg-[#1E293B]' : 'border-[#EAE5DA] bg-white'}`}>
                           <Button onClick={() => setIsMenuModalOpen(false)} className={`px-8 font-semibold bg-[#967D62] hover:bg-[#7A654E] ${isDinner ? 'text-[#F4F1EA]' : 'text-white'}`}>Fatto</Button>
                       </div>
-                  </div>
-              </div>
+                  </motion.div>
+              </motion.div>
           )}
-
-          {/* HEADER PLATFORM */}
+          </AnimatePresence>
           <header className={`relative flex h-16 shrink-0 items-center justify-between border-b px-2 sm:px-4 ${bgColor} ${isDinner ? 'border-[#334155]' : 'border-[#EAE5DA]'}`}>
             <div className="flex items-center gap-2 sm:gap-3 z-10">
                 <SidebarTrigger className="-ml-1" />
@@ -2409,10 +2421,14 @@ function App() {
                     const rowIdx = Math.floor(i / 3);
                     if (!rows[rowIdx]) rows[rowIdx] = [];
                     rows[rowIdx].push(
-                      <button
+                      <motion.button
                         key={card.key}
+                        layoutId={`menu-card-${card.key}`}
                         onClick={() => handleMenuSubViewChange(card.key as any)}
-                        className={`group text-left p-8 rounded-2xl border transition-all duration-200 hover:shadow-xl hover:-translate-y-1 flex flex-col ${
+                        whileHover={{ y: -4, boxShadow: '0 20px 40px rgba(0,0,0,0.12)' }}
+                        whileTap={{ scale: 0.98 }}
+                        transition={{ layout: { duration: 0.35, ease: [0.4, 0, 0.2, 1] }, default: { duration: 0.18 } }}
+                        className={`group text-left p-8 rounded-2xl border flex flex-col ${
                           isDinner ? 'bg-[#1E293B] border-[#334155] hover:border-[#967D62]' : 'bg-[#FDFAF5] border-[#EAE5DA] hover:border-[#967D62] hover:bg-white'
                         }`}
                       >
@@ -2426,7 +2442,7 @@ function App() {
                         <div className={`flex items-center gap-1.5 mt-6 text-sm font-semibold ${isDinner ? 'text-[#C4A882]' : 'text-[#967D62]'}`}>
                           Apri <ChevronRight className="w-4 h-4" />
                         </div>
-                      </button>
+                      </motion.button>
                     );
                     return rows;
                   }, []).map((row, i) => (
