@@ -1,19 +1,17 @@
 import { useState } from 'react';
 import { motion } from 'motion/react';
 
-const pageStaggerVariants = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.08, delayChildren: 0.04 } },
-};
-const si = {
-  hidden: { opacity: 0, y: 18 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.3, ease: [0.4, 0, 0.2, 1] as any } },
-};
-function PS({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <motion.div variants={pageStaggerVariants} initial="hidden" animate="show" className={className}>{children}</motion.div>;
-}
-function SI({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <motion.div variants={si} className={className}>{children}</motion.div>;
+function SI({ children, className, i = 0 }: { children: React.ReactNode; className?: string; i?: number }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.32, delay: i * 0.1, ease: [0.4, 0, 0.2, 1] }}
+      className={className}
+    >
+      {children}
+    </motion.div>
+  );
 }
 
 import {
@@ -130,8 +128,8 @@ export function DashboardView(props: DashboardViewProps) {
 
   if (activeView === 'Prenotazioni') return (
              <main className="flex-1 p-6 md:p-8 max-w-4xl mx-auto w-full">
-                <PS className="space-y-8">
-                <SI>
+                <>
+                <SI i={0}>
                 <div className="flex flex-col gap-2 sm:gap-1">
                         <div className="flex flex-wrap items-center gap-3">
                             <h1 className={`text-2xl sm:text-3xl font-bold tracking-tight ${textColor}`}>Gestione Prenotazioni</h1>
@@ -144,7 +142,7 @@ export function DashboardView(props: DashboardViewProps) {
                 </div>
                 </SI>
 
-                <SI>
+                <SI i={1}>
                     <Card className={cardBg}>
                         <CardHeader><CardTitle className={`text-lg ${textColor}`}>Nuova Prenotazione (Manuale)</CardTitle></CardHeader>
                         <CardContent>
@@ -176,7 +174,7 @@ export function DashboardView(props: DashboardViewProps) {
                     </Card>
                 </SI>
 
-                <SI>
+                <SI i={2}>
                     <Card className={cardBg}>
                         <CardHeader><CardTitle className={`text-lg ${textColor}`}>Lista Tavoli</CardTitle></CardHeader>
                         <CardContent>
@@ -209,14 +207,14 @@ export function DashboardView(props: DashboardViewProps) {
                         </CardContent>
                     </Card>
                 </SI>
-                </PS>
+                </>
              </main>
   );
 
   return (
              <main className={`flex-1 p-6 md:p-8 space-y-8 ${bgColor} transition-colors duration-500 max-w-7xl mx-auto w-full`}>
-                <PS className="space-y-8">
-                <SI>
+                <>
+                <SI i={0}>
                 <div className={`flex items-center justify-center py-2 px-4 rounded-lg border ${accentBg} ${accentColor}`}>
                      <div className="flex items-center gap-2">
                         <Zap className="w-4 h-4" />
@@ -225,7 +223,7 @@ export function DashboardView(props: DashboardViewProps) {
                 </div>
                 </SI>
 
-                <SI>
+                <SI i={1}>
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                     <Card className={`${cardBg} flex flex-col justify-center`}>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
@@ -300,7 +298,7 @@ export function DashboardView(props: DashboardViewProps) {
                 </div>
                 </SI>
 
-                <SI>
+                <SI i={2}>
                 <div className="grid gap-8 md:grid-cols-12 lg:min-h-[520px]">
                     {/* CARD PREVISIONE — metà larghezza */}
                     <Card className={`md:col-span-6 flex flex-col justify-between relative overflow-hidden ${cardBg}`}>
@@ -439,7 +437,7 @@ export function DashboardView(props: DashboardViewProps) {
                     </div>
                 </div>
                 </SI>
-                </PS>
+                </>
 
              </main>
   );
