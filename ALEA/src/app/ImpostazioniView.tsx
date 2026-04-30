@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import {
   Users, Clock, Pencil, ChefHat, ConciergeBell
@@ -11,9 +11,10 @@ import { Separator } from './components/ui/separator';
 import { weekDaysOrdered } from './constants';
 
 const _ps = { hidden: {}, show: { transition: { staggerChildren: 0.09, delayChildren: 0.04 } } };
-const _si = { hidden: { opacity: 0, y: 18 }, show: { opacity: 1, y: 0, transition: { duration: 0.28, ease: [0.4, 0, 0.2, 1] as any } } };
+const _si = { hidden: { opacity: 0, y: 18 }, show: { opacity: 1, y: 0, transition: { duration: 0.3, ease: [0.4, 0, 0.2, 1] as any } } };
 function PS({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <motion.div variants={_ps} initial="hidden" animate="show" className={className}>{children}</motion.div>;
+  const key = useRef(Math.random()).current;
+  return <motion.div key={key} variants={_ps} initial="hidden" animate="show" className={className}>{children}</motion.div>;
 }
 function SI({ children, className }: { children: React.ReactNode; className?: string }) {
   return <motion.div variants={_si} className={className}>{children}</motion.div>;
