@@ -2206,20 +2206,22 @@ function App() {
           </header>
           
           {/* ── ANIMATED VIEWS WRAPPER ─────────────────────────── */}
-          <AnimatePresence mode="wait" initial={false} custom={navDirection}>
+          <div style={{ position: 'relative', flex: 1, overflow: 'hidden', minHeight: 0 }}>
+          <AnimatePresence mode="sync" initial={false} custom={navDirection}>
           <motion.div
             key={activeView}
             custom={navDirection}
             variants={{
-              enter: (dir: number) => ({ opacity: 1, y: dir * 60 }),
-              center: { opacity: 1, y: 0 },
-              exit: (dir: number) => ({ opacity: 1, y: dir * -60 }),
+              enter: (dir: number) => ({ y: dir > 0 ? '100%' : '-100%' }),
+              center: { y: '0%' },
+              exit: (dir: number) => ({ y: dir > 0 ? '-100%' : '100%' }),
             }}
             initial="enter"
             animate="center"
             exit="exit"
-            transition={{ duration: 0.32, ease: [0.4, 0, 0.2, 1] }}
-            className="flex-1 flex flex-col min-h-0 overflow-y-auto overflow-x-hidden [&::-webkit-scrollbar]:hidden [scrollbar-width:none]"
+            transition={{ duration: 0.38, ease: [0.4, 0, 0.2, 1] }}
+            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflowY: 'auto', overflowX: 'hidden' }}
+            className="[&::-webkit-scrollbar]:hidden [scrollbar-width:none] flex flex-col"
           >
 
           {/* ========== GESTIONE SALA (GESTIONALE - senza ordini) ========== */}
@@ -2691,6 +2693,7 @@ function App() {
 
           </motion.div>
           </AnimatePresence>
+          </div>
 
         </SidebarInset>
       </SidebarProvider>
