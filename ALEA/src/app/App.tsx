@@ -1,7 +1,7 @@
 import { prevediGiorno, prevediSettimana, calcolaAttendibilita, AttendibilitaResult, isShiftFinished, getMeteoItaliano, ST_STOR_STATS, getFestivitaAvviso } from './engine';
 import { convocazione, convocazioneSettimanale, convocazioneCuochi, convocazioneCuochiSettimanale } from './engine';
 import { MENU_CATEGORIES, MENU_PRICES, BEVERAGE_COURSES, weekDaysOrdered, mapDays } from './constants';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import React from 'react';
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 import { Activity, Cloud, CloudRain, Users, TrendingUp, Sun, Moon, CalendarCheck, CheckCircle2, ClipboardCheck, UsersRound, Zap, CalendarDays, Clock, ChefHat, ConciergeBell, Plus, Trash2, AlertTriangle, PiggyBank, CalendarRange, Pencil, LayoutGrid, ArrowRightCircle, Utensils, Boxes, Loader2, Settings2, BookOpen, X, Check, XCircle, ChevronRight, Edit3, ChevronDown, ChevronUp, UserCog, CookingPot, ClipboardList, ArrowLeft, Star, History, BarChart2, Target, TrendingDown, ArrowUp, ArrowDown, Minus, Flame } from 'lucide-react';
@@ -23,24 +23,23 @@ import { Separator } from './components/ui/separator';
 import { AnimatePresence, motion } from 'motion/react';
 
 // ── ANIMAZIONI STAGGER ───────────────────────────────────────
-const staggerItemVariants = {
-  hidden: { opacity: 0, y: 16 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.28, ease: [0.4, 0, 0.2, 1] } },
-};
+import { animate as motionAnimate } from 'motion';
 function PageStagger({ children, className }: { children: React.ReactNode; className?: string }) {
   return <div className={className}>{children}</div>;
 }
 function SI({ children, className, i = 0 }: { children: React.ReactNode; className?: string; i?: number }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.32, delay: i * 0.1, ease: [0.4, 0, 0.2, 1] }}
-      className={className}
-    >
-      {children}
-    </motion.div>
-  );
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!ref.current) return;
+    const el = ref.current;
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(20px)';
+    const t = setTimeout(() => {
+      motionAnimate(el, { opacity: 1, y: 0 }, { duration: 0.32, ease: [0.4, 0, 0.2, 1] });
+    }, i * 100);
+    return () => clearTimeout(t);
+  }, [i]);
+  return <div ref={ref} className={className}>{children}</div>;
 }
 
 // ── SUPABASE ──────────────────────────────────────────────────
@@ -2461,12 +2460,10 @@ function App() {
                       <motion.button
                         key={card.key}
                         layoutId={`menu-card-${card.key}`}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.32, delay: i * 0.08, ease: [0.4, 0, 0.2, 1], layout: { duration: 0.35 } }}
                         onClick={() => handleMenuSubViewChange(card.key as any)}
                         whileHover={{ y: -4, boxShadow: '0 20px 40px rgba(0,0,0,0.12)' }}
                         whileTap={{ scale: 0.98 }}
+                        transition={{ layout: { duration: 0.35 }, default: { duration: 0.18 } }}
                         className={`group text-left p-8 rounded-2xl border flex flex-col ${
                           isDinner ? 'bg-[#1E293B] border-[#334155] hover:border-[#967D62]' : 'bg-[#FDFAF5] border-[#EAE5DA] hover:border-[#967D62] hover:bg-white'
                         }`}
