@@ -2349,8 +2349,6 @@ function App() {
 
           {/* ========== DASHBOARD + PRENOTAZIONI ========== */}
           {(activeView === "Dashboard" || activeView === "Prenotazioni") && (
-            <PageStagger className="flex-1 flex flex-col min-h-0">
-            <SI className="flex-1 flex flex-col min-h-0">
             <DashboardView
               isDinner={isDinner} textColor={textColor} mutedText={mutedText}
               cardBg={cardBg} accentColor={accentColor} accentBg={accentBg} bgColor={bgColor}
@@ -2379,14 +2377,10 @@ function App() {
               maxCapacity={maxCapacity}
               setIsMenuModalOpen={setIsMenuModalOpen}
             />
-            </SI>
-            </PageStagger>
           )}
 
           {/* ========== IMPOSTAZIONI ========== */}
           {activeView === "Impostazioni" && (
-            <PageStagger className="flex-1 flex flex-col min-h-0">
-            <SI className="flex-1 flex flex-col min-h-0">
             <ImpostazioniView
               isDinner={isDinner} textColor={textColor} mutedText={mutedText}
               cardBg={cardBg} accentColor={accentColor}
@@ -2405,8 +2399,6 @@ function App() {
               updateDailyHour={updateDailyHour}
               setActiveView={setActiveView}
             />
-            </SI>
-            </PageStagger>
           )}
 
           {/* ========== RECENSIONI (PLACEHOLDER) ========== */}
