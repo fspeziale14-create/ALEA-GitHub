@@ -23,29 +23,21 @@ import { Separator } from './components/ui/separator';
 import { AnimatePresence, motion } from 'motion/react';
 
 // ── ANIMAZIONI STAGGER ───────────────────────────────────────
-const pageStaggerVariants = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.07, delayChildren: 0.05 } },
-};
 const staggerItemVariants = {
   hidden: { opacity: 0, y: 16 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.3, ease: [0.4, 0, 0.2, 1] } },
+  show: { opacity: 1, y: 0, transition: { duration: 0.28, ease: [0.4, 0, 0.2, 1] } },
 };
 function PageStagger({ children, className }: { children: React.ReactNode; className?: string }) {
+  return <div className={className}>{children}</div>;
+}
+function SI({ children, className, i = 0 }: { children: React.ReactNode; className?: string; i?: number }) {
   return (
     <motion.div
-      variants={pageStaggerVariants}
-      initial="hidden"
-      animate="show"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.32, delay: i * 0.1, ease: [0.4, 0, 0.2, 1] }}
       className={className}
     >
-      {children}
-    </motion.div>
-  );
-}
-function SI({ children, className }: { children: React.ReactNode; className?: string }) {
-  return (
-    <motion.div variants={staggerItemVariants} className={className}>
       {children}
     </motion.div>
   );
@@ -2408,11 +2400,11 @@ function App() {
             <PageStagger className="flex-1 flex flex-col min-h-0">
             <main className="flex-1 p-6 md:p-8 max-w-6xl mx-auto w-full">
               <div className="space-y-6">
-                <SI>
+                <SI i={0}>
                   <h1 className={`text-3xl font-bold tracking-tight ${textColor}`}>Recensioni</h1>
                   <p className={`${mutedText} mt-1`}>Collega le recensioni agli ordini per capire cosa viene apprezzato o criticato — e agisci direttamente sul menu.</p>
                 </SI>
-                <SI>
+                <SI i={1}>
                 <div className={`flex flex-col items-center justify-center py-24 rounded-2xl border-2 border-dashed ${isDinner ? 'border-[#334155] text-[#94A3B8]' : 'border-[#EAE5DA] text-[#8C8A85]'}`}>
                   <Star className="w-12 h-12 mb-4 opacity-30" />
                   <p className="text-lg font-semibold opacity-50">Coming Soon</p>
@@ -2444,7 +2436,7 @@ function App() {
           {menuSubView === 'landing' && (
             <main className="flex-1 flex flex-col p-6 md:p-8 max-w-6xl mx-auto w-full">
               <PageStagger className="flex-1 flex flex-col">
-              <SI>
+              <SI i={2}>
               <div>
                 <h1 className={`text-3xl font-bold tracking-tight ${textColor}`}>Menu</h1>
                 <p className={`${mutedText} mt-1`}>Gestisci magazzino, ricette e analisi della redditività.</p>
@@ -2469,11 +2461,12 @@ function App() {
                       <motion.button
                         key={card.key}
                         layoutId={`menu-card-${card.key}`}
-                        variants={staggerItemVariants}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.32, delay: i * 0.08, ease: [0.4, 0, 0.2, 1], layout: { duration: 0.35 } }}
                         onClick={() => handleMenuSubViewChange(card.key as any)}
                         whileHover={{ y: -4, boxShadow: '0 20px 40px rgba(0,0,0,0.12)' }}
                         whileTap={{ scale: 0.98 }}
-                        transition={{ layout: { duration: 0.35, ease: [0.4, 0, 0.2, 1] }, default: { duration: 0.18 } }}
                         className={`group text-left p-8 rounded-2xl border flex flex-col ${
                           isDinner ? 'bg-[#1E293B] border-[#334155] hover:border-[#967D62]' : 'bg-[#FDFAF5] border-[#EAE5DA] hover:border-[#967D62] hover:bg-white'
                         }`}
