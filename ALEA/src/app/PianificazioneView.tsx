@@ -1,4 +1,5 @@
 import React from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 import { AttendibilitaResult } from './engine';
 import {
   Users, CalendarRange, Boxes, ClipboardList, CookingPot,
@@ -1677,7 +1678,13 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                                             const att: AttendibilitaResult = dayData.attendibilita ?? { livello: 'buona', motivazione: '', colore: 'bg-yellow-400', coloreBar: '#facc15' };
                                             const livelloLabel = att.livello.charAt(0).toUpperCase() + att.livello.slice(1);
                                             return (
-                                            <Card key={idx} className={`${cardBg} overflow-hidden flex flex-col`}>
+                                            <motion.div
+                                              key={idx}
+                                              initial={{ opacity: 0, y: 18 }}
+                                              animate={{ opacity: 1, y: 0 }}
+                                              transition={{ duration: 0.28, delay: idx * 0.06, ease: [0.4, 0, 0.2, 1] }}
+                                            >
+                                            <Card className={`${cardBg} overflow-hidden flex flex-col`}>
                                                 <CardHeader className="pb-3 border-b border-black/5 dark:border-white/5">
                                                     <CardTitle className={`flex justify-between items-center ${textColor}`}>
                                                         <div className="flex flex-col">
@@ -1793,6 +1800,7 @@ export function PianificazioneView(props: PianificazioneViewProps) {
 
                                                 </CardContent>
                                             </Card>
+                                            </motion.div>
                                             );
                                         })}
                                     </div>
@@ -1947,12 +1955,24 @@ export function PianificazioneView(props: PianificazioneViewProps) {
       {/* ════════════════════════════════════════════════════════
           MODALE — REGISTRA CONSUMO EXTRA
       ════════════════════════════════════════════════════════ */}
+      <AnimatePresence>
       {showExtraModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setShowExtraModal(false)}>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.18 }}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          onClick={() => setShowExtraModal(false)}
+        >
           {/* Overlay */}
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
           {/* Pannello */}
-          <div
+          <motion.div
+            initial={{ scale: 0.92, opacity: 0, y: 12 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.92, opacity: 0, y: 12 }}
+            transition={{ duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
             className={`relative w-full max-w-lg rounded-2xl shadow-2xl border overflow-hidden ${isDinner ? 'bg-[#1E293B] border-[#334155]' : 'bg-white border-[#EAE5DA]'}`}
             onClick={e => e.stopPropagation()}
           >
@@ -2156,13 +2176,14 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                 {extraSaving ? 'Salvataggio…' : 'Registra'}
               </Button>
             </div>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       )}
-
+      </AnimatePresence>
       {/* ════════════════════════════════════════════════════════
           MODALE — VERIFICA QUANTITÀ
       ════════════════════════════════════════════════════════ */}
+      <AnimatePresence>
       {showVerifyModal && (() => {
         const analysis = verifyPhase === 'analysis' ? computeVerifyAnalysis() : [];
         const modifiedCount = Object.values(verifyValues).filter(v => v !== '').length;
@@ -2170,9 +2191,20 @@ export function PianificazioneView(props: PianificazioneViewProps) {
         const selectedSnap = verifySnapshotId === '__auto__' ? verifySnapshots[0] : verifySnapshots.find(s => s.id === verifySnapshotId);
 
         return (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => { setShowVerifyModal(false); setVerifyPhase('input'); }}>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            onClick={() => { setShowVerifyModal(false); setVerifyPhase('input'); }}
+          >
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-            <div
+            <motion.div
+              initial={{ scale: 0.92, opacity: 0, y: 12 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.92, opacity: 0, y: 12 }}
+              transition={{ duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
               className={`relative w-full max-w-2xl rounded-2xl shadow-2xl border overflow-hidden ${isDinner ? 'bg-[#1E293B] border-[#334155]' : 'bg-white border-[#EAE5DA]'}`}
               onClick={e => e.stopPropagation()}
             >
@@ -2400,10 +2432,11 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                   </div>
                 </>
               )}
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
         );
       })()}
+      </AnimatePresence>
     </>
   );
 }
