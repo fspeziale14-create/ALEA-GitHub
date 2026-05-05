@@ -55,7 +55,7 @@ export function ImpostazioniView(props: ImpostazioniViewProps) {
 
   return (
              <main className="flex-1 p-6 md:p-8 max-w-4xl mx-auto w-full">
-                <>
+                <div className="space-y-8">
                     <SI i={0}>
                         <div>
                             <h1 className={`text-3xl font-bold tracking-tight ${textColor}`}>Impostazioni</h1>
@@ -188,7 +188,7 @@ export function ImpostazioniView(props: ImpostazioniViewProps) {
                         Salva e Torna alla Dashboard
                     </Button>
                     </SI>
-                </>
+                </div>
              </main>
   );
 }
