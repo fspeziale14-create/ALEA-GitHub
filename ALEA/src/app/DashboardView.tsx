@@ -1,10 +1,11 @@
 import { useState } from 'react';
 
-function SI({ children, className, i = 0 }: { children: React.ReactNode; className?: string; i?: number }) {
+function SI({ children, className, i = 0, navKey = 0 }: { children: React.ReactNode; className?: string; i?: number; navKey?: number }) {
   return (
     <div
+      key={navKey}
       className={`alea-si${className ? ' ' + className : ''}`}
-      style={{ animationDelay: `${i * 0.1}s` }}
+      style={{ animationDelay: `${0.18 + i * 0.11}s` }}
     >
       {children}
     </div>
@@ -64,6 +65,7 @@ interface DashboardViewProps {
   activeView: string;
   maxCapacity?: number;
   setIsMenuModalOpen?: (v: boolean) => void;
+  navKey?: number;
 }
 
 export function DashboardView(props: DashboardViewProps) {
@@ -87,6 +89,7 @@ export function DashboardView(props: DashboardViewProps) {
     isClosedEntry = false,
     currentShiftClosed = false,
     actualCovers = '', setActualCovers = () => {},
+    navKey = 0,
     finalBooked = '', setFinalBooked = () => {},
     predictedCovers = 0,
     bookedGuests = '', setBookedGuests = () => {},
@@ -126,7 +129,7 @@ export function DashboardView(props: DashboardViewProps) {
   if (activeView === 'Prenotazioni') return (
              <main className="flex-1 p-6 md:p-8 max-w-4xl mx-auto w-full">
                 <>
-                <SI i={0}>
+                <SI i={0} navKey={navKey}>
                 <div className="flex flex-col gap-2 sm:gap-1">
                         <div className="flex flex-wrap items-center gap-3">
                             <h1 className={`text-2xl sm:text-3xl font-bold tracking-tight ${textColor}`}>Gestione Prenotazioni</h1>
@@ -139,7 +142,7 @@ export function DashboardView(props: DashboardViewProps) {
                 </div>
                 </SI>
 
-                <SI i={1}>
+                <SI i={1} navKey={navKey}>
                     <Card className={cardBg}>
                         <CardHeader><CardTitle className={`text-lg ${textColor}`}>Nuova Prenotazione (Manuale)</CardTitle></CardHeader>
                         <CardContent>
@@ -171,7 +174,7 @@ export function DashboardView(props: DashboardViewProps) {
                     </Card>
                 </SI>
 
-                <SI i={2}>
+                <SI i={2} navKey={navKey}>
                     <Card className={cardBg}>
                         <CardHeader><CardTitle className={`text-lg ${textColor}`}>Lista Tavoli</CardTitle></CardHeader>
                         <CardContent>
@@ -211,7 +214,7 @@ export function DashboardView(props: DashboardViewProps) {
   return (
              <main className={`flex-1 p-6 md:p-8 space-y-8 ${bgColor} transition-colors duration-500 max-w-7xl mx-auto w-full`}>
                 <>
-                <SI i={0}>
+                <SI i={0} navKey={navKey}>
                 <div className={`flex items-center justify-center py-2 px-4 rounded-lg border ${accentBg} ${accentColor}`}>
                      <div className="flex items-center gap-2">
                         <Zap className="w-4 h-4" />
@@ -220,7 +223,7 @@ export function DashboardView(props: DashboardViewProps) {
                 </div>
                 </SI>
 
-                <SI i={1}>
+                <SI i={1} navKey={navKey}>
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                     <Card className={`${cardBg} flex flex-col justify-center`}>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
@@ -295,7 +298,7 @@ export function DashboardView(props: DashboardViewProps) {
                 </div>
                 </SI>
 
-                <SI i={2}>
+                <SI i={2} navKey={navKey}>
                 <div className="grid gap-8 md:grid-cols-12 lg:min-h-[520px]">
                     {/* CARD PREVISIONE — metà larghezza */}
                     <Card className={`md:col-span-6 flex flex-col justify-between relative overflow-hidden ${cardBg}`}>
