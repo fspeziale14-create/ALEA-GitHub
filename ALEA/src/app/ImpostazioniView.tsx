@@ -15,7 +15,7 @@ function SI({ children, className, i = 0, navKey = 0, navDir = 1 }: { children: 
     <div
       key={navKey}
       className={`alea-si${className ? ' ' + className : ''}`}
-      style={{ animationDelay: `${0.18 + i * 0.11}s` }}
+      style={{ animationDelay: `${i * 0.12}s`, ['--si-y' as any]: navDir > 0 ? '48px' : '-48px' }}
     >
       {children}
     </div>
