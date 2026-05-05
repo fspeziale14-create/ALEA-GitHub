@@ -25,11 +25,12 @@ import { AnimatePresence, motion } from 'motion/react';
 // ── ANIMAZIONI STAGGER ───────────────────────────────────────
 const staggerCSS = `
 @keyframes alea-si {
-  from { opacity: 0; transform: translateY(14px); }
-  to   { opacity: 1; transform: translateY(0); }
+  0%   { opacity: 0; transform: translateY(22px); }
+  100% { opacity: 1; transform: translateY(0); }
 }
 .alea-si {
-  animation: alea-si 0.5s cubic-bezier(0.25,0.46,0.45,0.94) both;
+  opacity: 0;
+  animation: alea-si 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 `;
 if (typeof document !== 'undefined' && !document.getElementById('alea-stagger-style')) {
@@ -41,11 +42,12 @@ if (typeof document !== 'undefined' && !document.getElementById('alea-stagger-st
 function PageStagger({ children, className }: { children: React.ReactNode; className?: string }) {
   return <div className={className}>{children}</div>;
 }
-function SI({ children, className, i = 0 }: { children: React.ReactNode; className?: string; i?: number }) {
+function SI({ children, className, i = 0, navKey = 0 }: { children: React.ReactNode; className?: string; i?: number; navKey?: number }) {
   return (
     <div
+      key={navKey}
       className={`alea-si${className ? ' ' + className : ''}`}
-      style={{ animationDelay: `${0.15 + i * 0.08}s` }}
+      style={{ animationDelay: `${0.18 + i * 0.11}s` }}
     >
       {children}
     </div>
@@ -172,11 +174,13 @@ function App() {
 
   const [navDirection, setNavDirection] = useState<1 | -1>(1);
   const [menuNavDirection, setMenuNavDirection] = useState<1 | -1>(1);
+  const [navCount, setNavCount] = useState(0);
 
   const handleViewChange = (view: string) => {
     const prevIdx = VIEW_ORDER.indexOf(activeView);
     const nextIdx = VIEW_ORDER.indexOf(view);
     setNavDirection(nextIdx >= prevIdx ? 1 : -1);
+    setNavCount(c => c + 1);
     setActiveView(view);
     if (view !== "Menu") setMenuSubView('landing');
   };
@@ -185,6 +189,7 @@ function App() {
     const prevIdx = MENU_SUB_ORDER.indexOf(menuSubView);
     const nextIdx = MENU_SUB_ORDER.indexOf(sub);
     setMenuNavDirection(nextIdx >= prevIdx ? 1 : -1);
+    setNavCount(c => c + 1);
     setMenuSubView(sub);
   };
   const [shift, setShift] = useState<ShiftType>('pranzo');
@@ -2238,19 +2243,19 @@ function App() {
           
           {/* ── ANIMATED VIEWS WRAPPER ─────────────────────────── */}
           <div style={{ position: 'relative', flex: 1, overflow: 'hidden', minHeight: 0 }}>
-          <AnimatePresence mode="wait" initial={false} custom={navDirection}>
+          <AnimatePresence mode="sync" initial={false} custom={navDirection}>
           <motion.div
             key={activeView}
             custom={navDirection}
             variants={{
               enter: (dir: number) => ({ y: dir > 0 ? '100%' : '-100%' }),
               center: { y: '0%' },
-              exit: (dir: number) => ({ y: dir > 0 ? '-100%' : '100%' }),
+              exit: (dir: number) => ({ y: dir > 0 ? '-60%' : '60%', opacity: 0 }),
             }}
             initial="enter"
             animate="center"
             exit="exit"
-            transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
+            transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
             style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflowY: 'auto', overflowX: 'hidden' }}
             className="[&::-webkit-scrollbar]:hidden [scrollbar-width:none] flex flex-col"
           >
@@ -2290,6 +2295,7 @@ function App() {
             <SI className="flex-1 flex flex-col min-h-0">
             <PianificazioneView
               key="pianificazione"
+              navKey={navCount}
               isDinner={isDinner} textColor={textColor} mutedText={mutedText}
               cardBg={cardBg} accentColor={accentColor} accentBg={accentBg}
               selectedDate={selectedDate}
@@ -2353,6 +2359,7 @@ function App() {
           {(activeView === "Dashboard" || activeView === "Prenotazioni") && (
             <DashboardView
               key={activeView}
+              navKey={navCount}
               isDinner={isDinner} textColor={textColor} mutedText={mutedText}
               cardBg={cardBg} accentColor={accentColor} accentBg={accentBg} bgColor={bgColor}
               selectedDate={selectedDate} shift={shift}
@@ -2386,6 +2393,7 @@ function App() {
           {activeView === "Impostazioni" && (
             <ImpostazioniView
               key="impostazioni"
+              navKey={navCount}
               isDinner={isDinner} textColor={textColor} mutedText={mutedText}
               cardBg={cardBg} accentColor={accentColor}
               waiterRatio={waiterRatio} setWaiterRatio={setWaiterRatio}
@@ -2409,11 +2417,11 @@ function App() {
           {activeView === "Recensioni" && (
             <main key="recensioni" className="flex-1 p-6 md:p-8 max-w-6xl mx-auto w-full">
               <div className="space-y-6">
-                <SI i={0}>
+                <SI i={0} navKey={navCount}>
                   <h1 className={`text-3xl font-bold tracking-tight ${textColor}`}>Recensioni</h1>
                   <p className={`${mutedText} mt-1`}>Collega le recensioni agli ordini per capire cosa viene apprezzato o criticato — e agisci direttamente sul menu.</p>
                 </SI>
-                <SI i={1}>
+                <SI i={1} navKey={navCount}>
                 <div className={`flex flex-col items-center justify-center py-24 rounded-2xl border-2 border-dashed ${isDinner ? 'border-[#334155] text-[#94A3B8]' : 'border-[#EAE5DA] text-[#8C8A85]'}`}>
                   <Star className="w-12 h-12 mb-4 opacity-30" />
                   <p className="text-lg font-semibold opacity-50">Coming Soon</p>
@@ -2443,7 +2451,7 @@ function App() {
           >
           {menuSubView === 'landing' && (
             <main key="menu-landing" className="flex-1 flex flex-col p-6 md:p-8 max-w-6xl mx-auto w-full">
-              <SI i={0}>
+              <SI i={0} navKey={navCount}>
               <div>
                 <h1 className={`text-3xl font-bold tracking-tight ${textColor}`}>Menu</h1>
                 <p className={`${mutedText} mt-1`}>Gestisci magazzino, ricette e analisi della redditività.</p>
@@ -2490,7 +2498,7 @@ function App() {
                     );
                     return rows;
                   }, []).map((row, i) => (
-                    <SI key={i} i={i + 1} className="grid grid-cols-1 md:grid-cols-3 gap-6">{row}</SI>
+                    <SI key={i} i={i + 1} navKey={navCount} className="grid grid-cols-1 md:grid-cols-3 gap-6">{row}</SI>
                   ))}
                 </div>
               </div>
@@ -2512,6 +2520,7 @@ function App() {
               </div>
               <PianificazioneView
                 key="menu-inventario"
+                navKey={navCount}
                 isDinner={isDinner} textColor={textColor} mutedText={mutedText}
                 cardBg={cardBg} accentColor={accentColor} accentBg={accentBg}
                 selectedDate={selectedDate}
@@ -2584,6 +2593,7 @@ function App() {
               </div>
               <PianificazioneView
                 key="menu-ricette"
+                navKey={navCount}
                 isDinner={isDinner} textColor={textColor} mutedText={mutedText}
                 cardBg={cardBg} accentColor={accentColor} accentBg={accentBg}
                 selectedDate={selectedDate}
