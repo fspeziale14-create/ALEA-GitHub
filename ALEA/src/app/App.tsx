@@ -2445,7 +2445,7 @@ function App() {
           {menuSubView === 'landing' && (
             <main className="flex-1 flex flex-col p-6 md:p-8 max-w-6xl mx-auto w-full">
               <PageStagger className="flex-1 flex flex-col">
-              <SI i={2}>
+              <SI i={0}>
               <div>
                 <h1 className={`text-3xl font-bold tracking-tight ${textColor}`}>Menu</h1>
                 <p className={`${mutedText} mt-1`}>Gestisci magazzino, ricette e analisi della redditività.</p>
