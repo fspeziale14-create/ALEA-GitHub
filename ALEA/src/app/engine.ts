@@ -598,15 +598,22 @@ export function getMeteoItaliano(condition: string): string {
     'clear': 'Sereno',
     'sunny': 'Soleggiato',
     'partly-cloudy': 'Parzialmente nuvoloso',
+    'partly_cloudy': 'Parzialmente nuvoloso',
     'cloudy': 'Nuvoloso',
     'overcast': 'Coperto',
     'rain': 'Pioggia',
+    'rainy': 'Pioggia',
     'drizzle': 'Pioggerella',
     'snow': 'Neve',
+    'snowy': 'Neve',
     'fog': 'Nebbia',
+    'foggy': 'Nebbia',
     'wind': 'Ventoso',
+    'windy': 'Ventoso',
     'thunderstorm': 'Temporale',
+    'stormy': 'Temporale',
+    'hail': 'Grandine',
   };
-  return map[condition] ?? condition;
+  return map[condition] ?? map[condition.toLowerCase()] ?? condition;
 }
 // ========== FINE ENGINE PREVISIONALE v2 ==========
