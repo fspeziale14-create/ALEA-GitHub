@@ -1,9 +1,14 @@
 import React from 'react';
 import { AttendibilitaResult } from './engine';
 
-function SI({ children, className, i = 0 }: { children: React.ReactNode; className?: string; i?: number }) {
+function idx(i: number, total: number, navDir: number) { return navDir > 0 ? i : (total - 1 - i); }
+function SI({ children, className, i = 0, navKey = 0, navDir = 1 }: { children: React.ReactNode; className?: string; i?: number; navKey?: number; navDir?: number }) {
   return (
-    <div className={`alea-si${className ? ' ' + className : ''}`} style={{ animationDelay: `${i * 0.1}s` }}>
+    <div
+      key={navKey}
+      className={`alea-si${className ? ' ' + className : ''}`}
+      style={{ animationDelay: `${i * 0.12}s`, ['--si-y' as any]: navDir > 0 ? '48px' : '-48px' }}
+    >
       {children}
     </div>
   );
