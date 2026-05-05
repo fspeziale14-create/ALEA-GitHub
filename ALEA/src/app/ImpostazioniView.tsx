@@ -56,6 +56,7 @@ export function ImpostazioniView(props: ImpostazioniViewProps) {
     cenaEnd, setCenaEnd, showDailyHours, setShowDailyHours,
     dailyHours, handleGlobalHourChange, updateDailyHour, setActiveView,
     navKey = 0,
+    navDir = 1,
   } = props;
 
   return (
