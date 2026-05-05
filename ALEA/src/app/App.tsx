@@ -25,10 +25,18 @@ import { AnimatePresence, motion } from 'motion/react';
 // ── ANIMAZIONI STAGGER ───────────────────────────────────────
 const staggerCSS = `
 @keyframes alea-si {
-  to { transform: translateY(0); }
+  from { transform: translateY(var(--si-y, 48px)); }
+  to   { transform: translateY(0); }
 }
 .alea-si {
-  transform: translateY(48px);
+  transform: translateY(var(--si-y, 48px));
+  animation: alea-si 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+.alea-si-grid {
+  display: contents;
+}
+.alea-si-grid > * {
+  transform: translateY(var(--si-y, 48px));
   animation: alea-si 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 `;
@@ -42,12 +50,12 @@ if (typeof document !== 'undefined' && !document.getElementById('alea-stagger-st
 function PageStagger({ children, className }: { children: React.ReactNode; className?: string }) {
   return <div className={className}>{children}</div>;
 }
-function SI({ children, className, i = 0, navKey = 0 }: { children: React.ReactNode; className?: string; i?: number; navKey?: number }) {
+function SI({ children, className, i = 0, navKey = 0, navDir = 1, grid = false }: { children: React.ReactNode; className?: string; i?: number; navKey?: number; navDir?: number; grid?: boolean }) {
   return (
     <div
       key={navKey}
-      className={`alea-si${className ? ' ' + className : ''}`}
-      style={{ animationDelay: `${i * 0.12}s` }}
+      className={`alea-si${grid ? ' alea-si-grid' : ''}${className ? ' ' + className : ''}`}
+      style={{ animationDelay: `${i * 0.12}s`, ['--si-y' as any]: navDir > 0 ? '48px' : '-48px' }}
     >
       {children}
     </div>
@@ -2296,6 +2304,7 @@ function App() {
             <PianificazioneView
               key="pianificazione"
               navKey={navCount}
+              navDir={navDirection}
               isDinner={isDinner} textColor={textColor} mutedText={mutedText}
               cardBg={cardBg} accentColor={accentColor} accentBg={accentBg}
               selectedDate={selectedDate}
@@ -2360,6 +2369,7 @@ function App() {
             <DashboardView
               key={activeView}
               navKey={navCount}
+              navDir={navDirection}
               isDinner={isDinner} textColor={textColor} mutedText={mutedText}
               cardBg={cardBg} accentColor={accentColor} accentBg={accentBg} bgColor={bgColor}
               selectedDate={selectedDate} shift={shift}
@@ -2394,6 +2404,8 @@ function App() {
             <ImpostazioniView
               key="impostazioni"
               navKey={navCount}
+              navDir={navDirection}
+              navDir={navDirection}
               isDinner={isDinner} textColor={textColor} mutedText={mutedText}
               cardBg={cardBg} accentColor={accentColor}
               waiterRatio={waiterRatio} setWaiterRatio={setWaiterRatio}
@@ -2417,11 +2429,11 @@ function App() {
           {activeView === "Recensioni" && (
             <main key="recensioni" className="flex-1 p-6 md:p-8 max-w-6xl mx-auto w-full">
               <div className="space-y-6">
-                <SI i={0} navKey={navCount}>
+                <SI i={0} navKey={navCount} navDir={navDirection}>
                   <h1 className={`text-3xl font-bold tracking-tight ${textColor}`}>Recensioni</h1>
                   <p className={`${mutedText} mt-1`}>Collega le recensioni agli ordini per capire cosa viene apprezzato o criticato — e agisci direttamente sul menu.</p>
                 </SI>
-                <SI i={1} navKey={navCount}>
+                <SI i={1} navKey={navCount} navDir={navDirection}>
                 <div className={`flex flex-col items-center justify-center py-24 rounded-2xl border-2 border-dashed ${isDinner ? 'border-[#334155] text-[#94A3B8]' : 'border-[#EAE5DA] text-[#8C8A85]'}`}>
                   <Star className="w-12 h-12 mb-4 opacity-30" />
                   <p className="text-lg font-semibold opacity-50">Coming Soon</p>
@@ -2451,7 +2463,7 @@ function App() {
           >
           {menuSubView === 'landing' && (
             <main key="menu-landing" className="flex-1 flex flex-col p-6 md:p-8 max-w-6xl mx-auto w-full">
-              <SI i={0} navKey={navCount}>
+              <SI i={0} navKey={navCount} navDir={navDirection}>
               <div>
                 <h1 className={`text-3xl font-bold tracking-tight ${textColor}`}>Menu</h1>
                 <p className={`${mutedText} mt-1`}>Gestisci magazzino, ricette e analisi della redditività.</p>
@@ -2498,7 +2510,7 @@ function App() {
                     );
                     return rows;
                   }, []).map((row, i) => (
-                    <SI key={i} i={i + 1} navKey={navCount} className="grid grid-cols-1 md:grid-cols-3 gap-6">{row}</SI>
+                    <SI key={i} i={i + 1} navKey={navCount} navDir={navDirection} className="grid grid-cols-1 md:grid-cols-3 gap-6">{row}</SI>
                   ))}
                 </div>
               </div>
@@ -2521,6 +2533,7 @@ function App() {
               <PianificazioneView
                 key="menu-inventario"
                 navKey={navCount}
+                navDir={navDirection}
                 isDinner={isDinner} textColor={textColor} mutedText={mutedText}
                 cardBg={cardBg} accentColor={accentColor} accentBg={accentBg}
                 selectedDate={selectedDate}
@@ -2594,6 +2607,7 @@ function App() {
               <PianificazioneView
                 key="menu-ricette"
                 navKey={navCount}
+                navDir={navDirection}
                 isDinner={isDinner} textColor={textColor} mutedText={mutedText}
                 cardBg={cardBg} accentColor={accentColor} accentBg={accentBg}
                 selectedDate={selectedDate}
