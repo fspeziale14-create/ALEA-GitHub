@@ -1,11 +1,11 @@
 import { useState } from 'react';
 
-function SI({ children, className, i = 0, navKey = 0 }: { children: React.ReactNode; className?: string; i?: number; navKey?: number }) {
+function SI({ children, className, i = 0, navKey = 0, navDir = 1, grid = false }: { children: React.ReactNode; className?: string; i?: number; navKey?: number; navDir?: number; grid?: boolean }) {
   return (
     <div
       key={navKey}
-      className={`alea-si${className ? ' ' + className : ''}`}
-      style={{ animationDelay: `${0.18 + i * 0.11}s` }}
+      className={`alea-si${grid ? ' alea-si-grid' : ''}${className ? ' ' + className : ''}`}
+      style={{ animationDelay: `${i * 0.12}s`, ['--si-y' as any]: navDir > 0 ? '48px' : '-48px' }}
     >
       {children}
     </div>
@@ -66,6 +66,7 @@ interface DashboardViewProps {
   maxCapacity?: number;
   setIsMenuModalOpen?: (v: boolean) => void;
   navKey?: number;
+  navDir?: number;
 }
 
 export function DashboardView(props: DashboardViewProps) {
@@ -90,6 +91,7 @@ export function DashboardView(props: DashboardViewProps) {
     currentShiftClosed = false,
     actualCovers = '', setActualCovers = () => {},
     navKey = 0,
+    navDir = 1,
     finalBooked = '', setFinalBooked = () => {},
     predictedCovers = 0,
     bookedGuests = '', setBookedGuests = () => {},
@@ -129,7 +131,7 @@ export function DashboardView(props: DashboardViewProps) {
   if (activeView === 'Prenotazioni') return (
              <main className="flex-1 p-6 md:p-8 max-w-4xl mx-auto w-full">
                 <>
-                <SI i={0} navKey={navKey}>
+                <SI i={0} navKey={navKey} navDir={navDir}>
                 <div className="flex flex-col gap-2 sm:gap-1">
                         <div className="flex flex-wrap items-center gap-3">
                             <h1 className={`text-2xl sm:text-3xl font-bold tracking-tight ${textColor}`}>Gestione Prenotazioni</h1>
@@ -142,7 +144,7 @@ export function DashboardView(props: DashboardViewProps) {
                 </div>
                 </SI>
 
-                <SI i={1} navKey={navKey}>
+                <SI i={1} navKey={navKey} navDir={navDir}>
                     <Card className={cardBg}>
                         <CardHeader><CardTitle className={`text-lg ${textColor}`}>Nuova Prenotazione (Manuale)</CardTitle></CardHeader>
                         <CardContent>
@@ -174,7 +176,7 @@ export function DashboardView(props: DashboardViewProps) {
                     </Card>
                 </SI>
 
-                <SI i={2} navKey={navKey}>
+                <SI i={2} navKey={navKey} navDir={navDir}>
                     <Card className={cardBg}>
                         <CardHeader><CardTitle className={`text-lg ${textColor}`}>Lista Tavoli</CardTitle></CardHeader>
                         <CardContent>
@@ -214,7 +216,7 @@ export function DashboardView(props: DashboardViewProps) {
   return (
              <main className={`flex-1 p-6 md:p-8 space-y-8 ${bgColor} transition-colors duration-500 max-w-7xl mx-auto w-full`}>
                 <>
-                <SI i={0} navKey={navKey}>
+                <SI i={0} navKey={navKey} navDir={navDir}>
                 <div className={`flex items-center justify-center py-2 px-4 rounded-lg border ${accentBg} ${accentColor}`}>
                      <div className="flex items-center gap-2">
                         <Zap className="w-4 h-4" />
@@ -223,9 +225,9 @@ export function DashboardView(props: DashboardViewProps) {
                 </div>
                 </SI>
 
-                <SI i={1} navKey={navKey}>
+                <SI i={1} navKey={navKey} navDir={navDir}>
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                    <SI i={1} navKey={navKey}>
+                    <SI i={1} navKey={navKey} navDir={navDir} grid={true}>
                     <Card className={`${cardBg} flex flex-col justify-center`}>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
                             <CardTitle className={`text-sm font-medium ${mutedText}`}>Meteo a {shift === 'pranzo' ? 'Pranzo (13:00)' : 'Cena (20:00)'}</CardTitle>
@@ -240,7 +242,7 @@ export function DashboardView(props: DashboardViewProps) {
                     </Card>
                     </SI>
                     
-                    <SI i={2} navKey={navKey}>
+                    <SI i={2} navKey={navKey} navDir={navDir} grid={true}>
                     <Card className={`${cardBg} flex flex-col justify-center`}>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
                             <CardTitle className={`text-sm font-medium ${mutedText}`}>Prenotati Iniziali</CardTitle>
@@ -255,7 +257,7 @@ export function DashboardView(props: DashboardViewProps) {
                     </Card>
                     </SI>
 
-                    <SI i={3} navKey={navKey} className="lg:col-span-2">
+                    <SI i={3} navKey={navKey} navDir={navDir} grid={true} className="lg:col-span-2">
                     <Card className={`lg:col-span-2 ${cardBg}`}>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className={`text-sm font-medium ${mutedText}`}>Verifica Servizio (Dati per Algoritmo)</CardTitle>
@@ -304,7 +306,7 @@ export function DashboardView(props: DashboardViewProps) {
                 </div>
                 </SI>
 
-                <SI i={4} navKey={navKey}>
+                <SI i={4} navKey={navKey} navDir={navDir}>
                 <div className="grid gap-8 md:grid-cols-12 lg:min-h-[520px]">
                     {/* CARD PREVISIONE — metà larghezza */}
                     <Card className={`md:col-span-6 flex flex-col justify-between relative overflow-hidden ${cardBg}`}>
