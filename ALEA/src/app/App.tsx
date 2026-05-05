@@ -25,12 +25,11 @@ import { AnimatePresence, motion } from 'motion/react';
 // ── ANIMAZIONI STAGGER ───────────────────────────────────────
 const staggerCSS = `
 @keyframes alea-si {
-  0%   { opacity: 0; transform: translateY(22px); }
-  100% { opacity: 1; transform: translateY(0); }
+  from { transform: translateY(28px); }
+  to   { transform: translateY(0); }
 }
 .alea-si {
-  opacity: 0;
-  animation: alea-si 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: alea-si 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 `;
 if (typeof document !== 'undefined' && !document.getElementById('alea-stagger-style')) {
@@ -2250,7 +2249,7 @@ function App() {
             variants={{
               enter: (dir: number) => ({ y: dir > 0 ? '100%' : '-100%' }),
               center: { y: '0%' },
-              exit: (dir: number) => ({ y: dir > 0 ? '-60%' : '60%', opacity: 0 }),
+              exit: (dir: number) => ({ y: dir > 0 ? '-30%' : '30%' }),
             }}
             initial="enter"
             animate="center"
