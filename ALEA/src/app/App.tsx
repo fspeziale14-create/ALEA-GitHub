@@ -25,27 +25,23 @@ import { AnimatePresence, motion } from 'motion/react';
 // ── ANIMAZIONI STAGGER ───────────────────────────────────────
 const staggerCSS = `
 @keyframes alea-si {
-  from { transform: translateY(var(--si-y, 48px)); }
+  from { transform: translateY(var(--si-y, 60px)); }
   to   { transform: translateY(0); }
 }
 .alea-si {
-  transform: translateY(var(--si-y, 48px));
-  animation: alea-si 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  transform: translateY(var(--si-y, 60px));
+  animation: alea-si 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
-.alea-si-grid {
-  display: contents;
-}
+.alea-si-grid { display: contents; }
 .alea-si-grid > * {
-  transform: translateY(var(--si-y, 48px));
-  animation: alea-si 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  transform: translateY(var(--si-y, 60px));
+  animation: alea-si 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 `;
-
-if (typeof document !== 'undefined' && !document.getElementById('alea-stagger-style')) {
-  const s = document.createElement('style');
-  s.id = 'alea-stagger-style';
-  s.textContent = staggerCSS;
-  document.head.appendChild(s);
+if (typeof document !== 'undefined') {
+  let _s = document.getElementById('alea-stagger-style');
+  if (!_s) { _s = document.createElement('style'); _s.id = 'alea-stagger-style'; document.head.appendChild(_s); }
+  _s.textContent = staggerCSS;
 }
 function PageStagger({ children, className }: { children: React.ReactNode; className?: string }) {
   return <div className={className}>{children}</div>;
@@ -55,7 +51,7 @@ function SI({ children, className, i = 0, navKey = 0, navDir = 1, grid = false }
     <div
       key={navKey}
       className={`alea-si${grid ? ' alea-si-grid' : ''}${className ? ' ' + className : ''}`}
-      style={{ animationDelay: `${i * 0.12}s`, ['--si-y' as any]: navDir > 0 ? '48px' : '-48px' }}
+      style={{ animationDelay: `${i * 0.15}s`, ['--si-y' as any]: navDir > 0 ? '60px' : '-60px' }}
     >
       {children}
     </div>
