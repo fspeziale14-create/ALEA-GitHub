@@ -11,6 +11,10 @@ function SI({ children, className, i = 0, navKey = 0, navDir = 1, grid = false }
     </div>
   );
 }
+// Returns stagger index reversed when navigating up
+function idx(i: number, total: number, navDir: number) {
+  return navDir > 0 ? i : (total - 1 - i);
+}
 
 import {
   Activity, Cloud, CloudRain, Users, TrendingUp, Sun, Moon,
@@ -216,7 +220,7 @@ export function DashboardView(props: DashboardViewProps) {
   return (
              <main className={`flex-1 p-6 md:p-8 space-y-8 ${bgColor} transition-colors duration-500 max-w-7xl mx-auto w-full`}>
                 <>
-                <SI i={0} navKey={navKey} navDir={navDir}>
+                <SI i={idx(0, 5, navDir)} navKey={navKey} navDir={navDir}>
                 <div className={`flex items-center justify-center py-2 px-4 rounded-lg border ${accentBg} ${accentColor}`}>
                      <div className="flex items-center gap-2">
                         <Zap className="w-4 h-4" />
@@ -225,9 +229,9 @@ export function DashboardView(props: DashboardViewProps) {
                 </div>
                 </SI>
 
-                <SI i={1} navKey={navKey} navDir={navDir}>
+                <SI i={idx(1, 5, navDir)} navKey={navKey} navDir={navDir}>
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                    <SI i={1} navKey={navKey} navDir={navDir} grid={true}>
+                    <SI i={idx(1, 5, navDir)} navKey={navKey} navDir={navDir} grid={true}>
                     <Card className={`${cardBg} flex flex-col justify-center`}>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
                             <CardTitle className={`text-sm font-medium ${mutedText}`}>Meteo a {shift === 'pranzo' ? 'Pranzo (13:00)' : 'Cena (20:00)'}</CardTitle>
@@ -242,7 +246,7 @@ export function DashboardView(props: DashboardViewProps) {
                     </Card>
                     </SI>
                     
-                    <SI i={2} navKey={navKey} navDir={navDir} grid={true}>
+                    <SI i={idx(2, 5, navDir)} navKey={navKey} navDir={navDir} grid={true}>
                     <Card className={`${cardBg} flex flex-col justify-center`}>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
                             <CardTitle className={`text-sm font-medium ${mutedText}`}>Prenotati Iniziali</CardTitle>
@@ -257,7 +261,7 @@ export function DashboardView(props: DashboardViewProps) {
                     </Card>
                     </SI>
 
-                    <SI i={3} navKey={navKey} navDir={navDir} grid={true} className="lg:col-span-2">
+                    <SI i={idx(3, 5, navDir)} navKey={navKey} navDir={navDir} grid={true} className="lg:col-span-2">
                     <Card className={`lg:col-span-2 ${cardBg}`}>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className={`text-sm font-medium ${mutedText}`}>Verifica Servizio (Dati per Algoritmo)</CardTitle>
@@ -306,7 +310,7 @@ export function DashboardView(props: DashboardViewProps) {
                 </div>
                 </SI>
 
-                <SI i={4} navKey={navKey} navDir={navDir}>
+                <SI i={idx(4, 5, navDir)} navKey={navKey} navDir={navDir}>
                 <div className="grid gap-8 md:grid-cols-12 lg:min-h-[520px]">
                     {/* CARD PREVISIONE — metà larghezza */}
                     <Card className={`md:col-span-6 flex flex-col justify-between relative overflow-hidden ${cardBg}`}>
