@@ -2407,8 +2407,7 @@ function App() {
 
           {/* ========== RECENSIONI (PLACEHOLDER) ========== */}
           {activeView === "Recensioni" && (
-            <PageStagger className="flex-1 flex flex-col min-h-0">
-            <main className="flex-1 p-6 md:p-8 max-w-6xl mx-auto w-full">
+            <main key="recensioni" className="flex-1 p-6 md:p-8 max-w-6xl mx-auto w-full">
               <div className="space-y-6">
                 <SI i={0}>
                   <h1 className={`text-3xl font-bold tracking-tight ${textColor}`}>Recensioni</h1>
@@ -2423,7 +2422,6 @@ function App() {
                 </SI>
               </div>
             </main>
-            </PageStagger>
           )}
 
           {/* ========== MENU ========== */}
@@ -2444,8 +2442,7 @@ function App() {
             className="flex-1 flex flex-col min-h-0"
           >
           {menuSubView === 'landing' && (
-            <main className="flex-1 flex flex-col p-6 md:p-8 max-w-6xl mx-auto w-full">
-              <PageStagger className="flex-1 flex flex-col">
+            <main key="menu-landing" className="flex-1 flex flex-col p-6 md:p-8 max-w-6xl mx-auto w-full">
               <SI i={0}>
               <div>
                 <h1 className={`text-3xl font-bold tracking-tight ${textColor}`}>Menu</h1>
@@ -2493,11 +2490,10 @@ function App() {
                     );
                     return rows;
                   }, []).map((row, i) => (
-                    <PageStagger key={i} className="grid grid-cols-1 md:grid-cols-3 gap-6">{row}</PageStagger>
+                    <SI key={i} i={i + 1} className="grid grid-cols-1 md:grid-cols-3 gap-6">{row}</SI>
                   ))}
                 </div>
               </div>
-              </PageStagger>
             </main>
           )}
 
