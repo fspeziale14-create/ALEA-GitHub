@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './com
 import { Separator } from './components/ui/separator';
 import { weekDaysOrdered } from './constants';
 
+function idx(i: number, total: number, navDir: number) { return navDir > 0 ? i : (total - 1 - i); }
 function SI({ children, className, i = 0, navKey = 0, navDir = 1 }: { children: React.ReactNode; className?: string; i?: number; navKey?: number; navDir?: number }) {
   return (
     <div
@@ -60,14 +61,14 @@ export function ImpostazioniView(props: ImpostazioniViewProps) {
   return (
              <main className="flex-1 p-6 md:p-8 max-w-4xl mx-auto w-full">
                 <div className="space-y-8">
-                    <SI i={0} navKey={navKey} navDir={navDir}>
+                    <SI i={idx(0, 4, navDir)} navKey={navKey} navDir={navDir}>
                         <div>
                             <h1 className={`text-3xl font-bold tracking-tight ${textColor}`}>Impostazioni</h1>
                             <p className={`${mutedText} mt-1`}>Configura i parametri operativi del ristorante.</p>
                         </div>
                     </SI>
 
-                    <SI i={1} navKey={navKey} navDir={navDir}>
+                    <SI i={idx(1, 4, navDir)} navKey={navKey} navDir={navDir}>
                     <Card className={cardBg}>
                         <CardHeader>
                             <CardTitle className={`flex items-center gap-2 ${textColor}`}><Users className={`w-5 h-5 ${accentColor}`} /> Rapporti Staff & Sala</CardTitle>
@@ -122,7 +123,7 @@ export function ImpostazioniView(props: ImpostazioniViewProps) {
                     </Card>
                     </SI>
 
-                    <SI i={2} navKey={navKey} navDir={navDir}>
+                    <SI i={idx(2, 4, navDir)} navKey={navKey} navDir={navDir}>
                     <Card className={cardBg}>
                         <CardHeader className="flex flex-row justify-between items-start">
                             <div>
@@ -187,7 +188,7 @@ export function ImpostazioniView(props: ImpostazioniViewProps) {
                     </Card>
                     </SI>
 
-                    <SI i={3} navKey={navKey} navDir={navDir}>
+                    <SI i={idx(3, 4, navDir)} navKey={navKey} navDir={navDir}>
                     <Button onClick={() => setActiveView("Dashboard")} className={`w-full py-6 text-lg font-semibold shadow-sm bg-[#967D62] hover:bg-[#7A654E] ${isDinner ? 'text-[#F4F1EA]' : 'text-white'}`}>
                         Salva e Torna alla Dashboard
                     </Button>
