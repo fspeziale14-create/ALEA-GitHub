@@ -95,6 +95,7 @@ interface PianificazioneViewProps {
   saveMenuPrice: (dishName: string, price: number) => Promise<void>;
   supabase: any;
   isLoggedIn: boolean;
+  navKey?: number;
 }
 
 export function PianificazioneView(props: PianificazioneViewProps) {
@@ -105,6 +106,7 @@ export function PianificazioneView(props: PianificazioneViewProps) {
     hideHeader = false,
     hideTabBar = false,
     visibleTabs,
+    navKey = 0,
   } = p;
 
   // Aliases usati nel JSX originale
@@ -806,7 +808,7 @@ export function PianificazioneView(props: PianificazioneViewProps) {
     <>
              <main className="flex-1 p-6 md:p-8 max-w-6xl mx-auto w-full">
                 <div className="space-y-6">
-                    <SI i={0}>
+                    <SI i={0} navKey={navKey}>
                     {!hideHeader && (
                     <div className="flex flex-col md:flex-row justify-between md:items-end gap-4">
                         <div>
@@ -829,7 +831,7 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                     </div>
                     )}
                     </SI>
-                    <SI i={1}>
+                    <SI i={1} navKey={navKey}>
                     {planTab === 'inventario' && (
                         <div className="space-y-6">
                             {/* RIGA DUE COLONNE: Magazzino + Ricette */}
@@ -1381,7 +1383,7 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                     )}
                     </SI>
 
-                    <SI i={1}>
+                    <SI i={1} navKey={navKey}>
                     {planTab === 'ricette' && (
                         <div className="space-y-6">
                             <Card className={cardBg}>
@@ -1629,7 +1631,7 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                     )}
                     </SI>
 
-                    <SI i={1}>
+                    <SI i={1} navKey={navKey}>
                     {planTab === 'sala' && (
                         <>
                             {!weekGenerated ? (
@@ -1817,7 +1819,7 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                     )}
                     </SI>
 
-                    <SI i={1}>
+                    <SI i={1} navKey={navKey}>
                     {planTab === 'cucina' && (
                         <div className="space-y-6">
                             <Card className={cardBg}>
@@ -1910,7 +1912,7 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                 </div>
 
                 {/* -- Accesso secondario: card stile Menu -- */}
-                <SI i={2}>
+                <SI i={2} navKey={navKey}>
                 {planTab !== 'inventario' && planTab !== 'ricette' && (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-5 pt-2">
                     {/* Prenotazioni — disabilitata */}
