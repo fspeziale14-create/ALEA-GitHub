@@ -2289,6 +2289,7 @@ function App() {
             <PageStagger className="flex-1 flex flex-col min-h-0">
             <SI className="flex-1 flex flex-col min-h-0">
             <PianificazioneView
+              key="pianificazione"
               isDinner={isDinner} textColor={textColor} mutedText={mutedText}
               cardBg={cardBg} accentColor={accentColor} accentBg={accentBg}
               selectedDate={selectedDate}
@@ -2514,6 +2515,7 @@ function App() {
                 <span className={`text-sm font-semibold ${textColor}`}>Inventario & Magazzino</span>
               </div>
               <PianificazioneView
+                key="menu-inventario"
                 isDinner={isDinner} textColor={textColor} mutedText={mutedText}
                 cardBg={cardBg} accentColor={accentColor} accentBg={accentBg}
                 selectedDate={selectedDate}
@@ -2585,6 +2587,7 @@ function App() {
                 <span className={`text-sm font-semibold ${textColor}`}>Ricette</span>
               </div>
               <PianificazioneView
+                key="menu-ricette"
                 isDinner={isDinner} textColor={textColor} mutedText={mutedText}
                 cardBg={cardBg} accentColor={accentColor} accentBg={accentBg}
                 selectedDate={selectedDate}
