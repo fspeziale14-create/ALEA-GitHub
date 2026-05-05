@@ -810,7 +810,7 @@ export function PianificazioneView(props: PianificazioneViewProps) {
     <>
              <main className="flex-1 p-6 md:p-8 max-w-6xl mx-auto w-full">
                 <div className="space-y-6">
-                    <SI i={0} navKey={navKey} navDir={navDir}>
+                    <SI i={idx(0, 3, navDir)} navKey={navKey} navDir={navDir}>
                     {!hideHeader && (
                     <div className="flex flex-col md:flex-row justify-between md:items-end gap-4">
                         <div>
@@ -833,7 +833,7 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                     </div>
                     )}
                     </SI>
-                    <SI i={1} navKey={navKey} navDir={navDir}>
+                    <SI i={idx(1, 3, navDir)} navKey={navKey} navDir={navDir}>
                     {planTab === 'inventario' && (
                         <div className="space-y-6">
                             {/* RIGA DUE COLONNE: Magazzino + Ricette */}
@@ -1385,7 +1385,7 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                     )}
                     </SI>
 
-                    <SI i={1} navKey={navKey} navDir={navDir}>
+                    <SI i={idx(1, 3, navDir)} navKey={navKey} navDir={navDir}>
                     {planTab === 'ricette' && (
                         <div className="space-y-6">
                             <Card className={cardBg}>
@@ -1633,7 +1633,7 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                     )}
                     </SI>
 
-                    <SI i={1} navKey={navKey} navDir={navDir}>
+                    <SI i={idx(1, 3, navDir)} navKey={navKey} navDir={navDir}>
                     {planTab === 'sala' && (
                         <>
                             {!weekGenerated ? (
@@ -1821,7 +1821,7 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                     )}
                     </SI>
 
-                    <SI i={1} navKey={navKey} navDir={navDir}>
+                    <SI i={idx(1, 3, navDir)} navKey={navKey} navDir={navDir}>
                     {planTab === 'cucina' && (
                         <div className="space-y-6">
                             <Card className={cardBg}>
@@ -1914,7 +1914,7 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                 </div>
 
                 {/* -- Accesso secondario: card stile Menu -- */}
-                <SI i={2} navKey={navKey} navDir={navDir}>
+                <SI i={idx(2, 3, navDir)} navKey={navKey} navDir={navDir}>
                 {planTab !== 'inventario' && planTab !== 'ricette' && (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-5 pt-2">
                     {/* Prenotazioni — disabilitata */}
