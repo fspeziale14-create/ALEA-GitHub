@@ -46,7 +46,7 @@ function SI({ children, className, i = 0, navKey = 0 }: { children: React.ReactN
     <div
       key={navKey}
       className={`alea-si${className ? ' ' + className : ''}`}
-      style={{ animationDelay: `${0.18 + i * 0.11}s` }}
+      style={{ animationDelay: `${0.18 + i * 0.18}s` }}
     >
       {children}
     </div>
@@ -2249,7 +2249,7 @@ function App() {
             variants={{
               enter: (dir: number) => ({ y: dir > 0 ? '100%' : '-100%' }),
               center: { y: '0%' },
-              exit: (dir: number) => ({ y: dir > 0 ? '-30%' : '30%' }),
+              exit: (dir: number) => ({ y: dir > 0 ? '-100%' : '100%' }),
             }}
             initial="enter"
             animate="center"
