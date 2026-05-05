@@ -28,10 +28,11 @@ const staggerCSS = `
   to { transform: translateY(0); }
 }
 .alea-si {
-  transform: translateY(32px);
-  animation: alea-si 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  transform: translateY(48px);
+  animation: alea-si 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 `;
+
 if (typeof document !== 'undefined' && !document.getElementById('alea-stagger-style')) {
   const s = document.createElement('style');
   s.id = 'alea-stagger-style';
@@ -46,7 +47,7 @@ function SI({ children, className, i = 0, navKey = 0 }: { children: React.ReactN
     <div
       key={navKey}
       className={`alea-si${className ? ' ' + className : ''}`}
-      style={{ animationDelay: `${i * 0.14}s` }}
+      style={{ animationDelay: `${i * 0.12}s` }}
     >
       {children}
     </div>
