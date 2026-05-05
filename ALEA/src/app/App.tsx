@@ -2302,7 +2302,7 @@ function App() {
             <PageStagger className="flex-1 flex flex-col min-h-0">
             <SI className="flex-1 flex flex-col min-h-0">
             <PianificazioneView
-              key="pianificazione"
+              key={`pianificazione-${navCount}`}
               navKey={navCount}
               navDir={navDirection}
               isDinner={isDinner} textColor={textColor} mutedText={mutedText}
@@ -2402,7 +2402,7 @@ function App() {
           {/* ========== IMPOSTAZIONI ========== */}
           {activeView === "Impostazioni" && (
             <ImpostazioniView
-              key="impostazioni"
+              key={`impostazioni-${navCount}`}
               navKey={navCount}
               navDir={navDirection}
               navDir={navDirection}
@@ -2427,7 +2427,7 @@ function App() {
 
           {/* ========== RECENSIONI (PLACEHOLDER) ========== */}
           {activeView === "Recensioni" && (
-            <main key="recensioni" className="flex-1 p-6 md:p-8 max-w-6xl mx-auto w-full">
+            <main key={`recensioni-${navCount}`} className="flex-1 p-6 md:p-8 max-w-6xl mx-auto w-full">
               <div className="space-y-6">
                 <SI i={navDirection > 0 ? 0 : 1} navKey={navCount} navDir={navDirection}>
                   <h1 className={`text-3xl font-bold tracking-tight ${textColor}`}>Recensioni</h1>
@@ -2462,7 +2462,7 @@ function App() {
             className="flex-1 flex flex-col min-h-0"
           >
           {menuSubView === 'landing' && (
-            <main key="menu-landing" className="flex-1 flex flex-col p-6 md:p-8 max-w-6xl mx-auto w-full">
+            <main key={`menu-landing-${navCount}`} className="flex-1 flex flex-col p-6 md:p-8 max-w-6xl mx-auto w-full">
               <SI i={0} navKey={navCount} navDir={navDirection}>
               <div>
                 <h1 className={`text-3xl font-bold tracking-tight ${textColor}`}>Menu</h1>
@@ -2531,7 +2531,7 @@ function App() {
                 <span className={`text-sm font-semibold ${textColor}`}>Inventario & Magazzino</span>
               </div>
               <PianificazioneView
-                key="menu-inventario"
+                key={`menu-inventario-${navCount}`}
                 navKey={navCount}
                 navDir={navDirection}
                 isDinner={isDinner} textColor={textColor} mutedText={mutedText}
@@ -2605,7 +2605,7 @@ function App() {
                 <span className={`text-sm font-semibold ${textColor}`}>Ricette</span>
               </div>
               <PianificazioneView
-                key="menu-ricette"
+                key={`menu-ricette-${navCount}`}
                 navKey={navCount}
                 navDir={navDirection}
                 isDinner={isDinner} textColor={textColor} mutedText={mutedText}
