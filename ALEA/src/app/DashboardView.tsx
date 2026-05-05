@@ -225,6 +225,7 @@ export function DashboardView(props: DashboardViewProps) {
 
                 <SI i={1} navKey={navKey}>
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                    <SI i={1} navKey={navKey}>
                     <Card className={`${cardBg} flex flex-col justify-center`}>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
                             <CardTitle className={`text-sm font-medium ${mutedText}`}>Meteo a {shift === 'pranzo' ? 'Pranzo (13:00)' : 'Cena (20:00)'}</CardTitle>
@@ -237,7 +238,9 @@ export function DashboardView(props: DashboardViewProps) {
                             </div>
                         </CardContent>
                     </Card>
+                    </SI>
                     
+                    <SI i={2} navKey={navKey}>
                     <Card className={`${cardBg} flex flex-col justify-center`}>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
                             <CardTitle className={`text-sm font-medium ${mutedText}`}>Prenotati Iniziali</CardTitle>
@@ -250,7 +253,9 @@ export function DashboardView(props: DashboardViewProps) {
                             )}
                         </CardContent>
                     </Card>
+                    </SI>
 
+                    <SI i={3} navKey={navKey} className="lg:col-span-2">
                     <Card className={`lg:col-span-2 ${cardBg}`}>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className={`text-sm font-medium ${mutedText}`}>Verifica Servizio (Dati per Algoritmo)</CardTitle>
@@ -295,10 +300,11 @@ export function DashboardView(props: DashboardViewProps) {
                             )}
                         </CardContent>
                     </Card>
+                    </SI>
                 </div>
                 </SI>
 
-                <SI i={2} navKey={navKey}>
+                <SI i={4} navKey={navKey}>
                 <div className="grid gap-8 md:grid-cols-12 lg:min-h-[520px]">
                     {/* CARD PREVISIONE — metà larghezza */}
                     <Card className={`md:col-span-6 flex flex-col justify-between relative overflow-hidden ${cardBg}`}>
