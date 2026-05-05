@@ -2429,11 +2429,11 @@ function App() {
           {activeView === "Recensioni" && (
             <main key="recensioni" className="flex-1 p-6 md:p-8 max-w-6xl mx-auto w-full">
               <div className="space-y-6">
-                <SI i={0} navKey={navCount} navDir={navDirection}>
+                <SI i={navDirection > 0 ? 0 : 1} navKey={navCount} navDir={navDirection}>
                   <h1 className={`text-3xl font-bold tracking-tight ${textColor}`}>Recensioni</h1>
                   <p className={`${mutedText} mt-1`}>Collega le recensioni agli ordini per capire cosa viene apprezzato o criticato — e agisci direttamente sul menu.</p>
                 </SI>
-                <SI i={1} navKey={navCount} navDir={navDirection}>
+                <SI i={navDirection > 0 ? 1 : 0} navKey={navCount} navDir={navDirection}>
                 <div className={`flex flex-col items-center justify-center py-24 rounded-2xl border-2 border-dashed ${isDinner ? 'border-[#334155] text-[#94A3B8]' : 'border-[#EAE5DA] text-[#8C8A85]'}`}>
                   <Star className="w-12 h-12 mb-4 opacity-30" />
                   <p className="text-lg font-semibold opacity-50">Coming Soon</p>
