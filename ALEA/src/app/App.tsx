@@ -25,11 +25,11 @@ import { AnimatePresence, motion } from 'motion/react';
 // ── ANIMAZIONI STAGGER ───────────────────────────────────────
 const staggerCSS = `
 @keyframes alea-si {
-  from { opacity: 0; transform: translateY(18px); }
+  from { opacity: 0; transform: translateY(14px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 .alea-si {
-  animation: alea-si 0.32s cubic-bezier(0.4,0,0.2,1) both;
+  animation: alea-si 0.5s cubic-bezier(0.25,0.46,0.45,0.94) both;
 }
 `;
 if (typeof document !== 'undefined' && !document.getElementById('alea-stagger-style')) {
@@ -45,7 +45,7 @@ function SI({ children, className, i = 0 }: { children: React.ReactNode; classNa
   return (
     <div
       className={`alea-si${className ? ' ' + className : ''}`}
-      style={{ animationDelay: `${i * 0.1}s` }}
+      style={{ animationDelay: `${0.15 + i * 0.08}s` }}
     >
       {children}
     </div>
@@ -2250,7 +2250,7 @@ function App() {
             initial="enter"
             animate="center"
             exit="exit"
-            transition={{ duration: 0.32, ease: [0.4, 0, 0.2, 1] }}
+            transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
             style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflowY: 'auto', overflowX: 'hidden' }}
             className="[&::-webkit-scrollbar]:hidden [scrollbar-width:none] flex flex-col"
           >
