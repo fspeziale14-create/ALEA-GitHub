@@ -24,18 +24,34 @@ import { AnimatePresence, motion } from 'motion/react';
 
 // ── ANIMAZIONI STAGGER ───────────────────────────────────────
 const staggerCSS = `
-@keyframes alea-si {
+@keyframes alea-si-in {
   from { transform: translateY(var(--si-y, 60px)); }
   to   { transform: translateY(0); }
 }
+@keyframes alea-si-out {
+  from { transform: translateY(0); }
+  to   { transform: translateY(var(--si-y-out, -60px)); }
+}
 .alea-si {
   transform: translateY(var(--si-y, 60px));
-  animation: alea-si 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: alea-si-in 1.1s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 .alea-si-grid { display: contents; }
 .alea-si-grid > * {
   transform: translateY(var(--si-y, 60px));
-  animation: alea-si 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: alea-si-in 1.1s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+[data-framer-exit] .alea-si,
+[style*="translateY(-100%)"] .alea-si,
+[style*="translateY(100%)"] .alea-si {
+  animation: alea-si-out 0.5s cubic-bezier(0.4, 0, 0.8, 0) forwards !important;
+  transform: translateY(0) !important;
+}
+[data-framer-exit] .alea-si-grid > *,
+[style*="translateY(-100%)"] .alea-si-grid > *,
+[style*="translateY(100%)"] .alea-si-grid > * {
+  animation: alea-si-out 0.5s cubic-bezier(0.4, 0, 0.8, 0) forwards !important;
+  transform: translateY(0) !important;
 }
 `;
 if (typeof document !== 'undefined') {
@@ -51,7 +67,11 @@ function SI({ children, className, i = 0, navKey = 0, navDir = 1, grid = false }
     <div
       key={navKey}
       className={`alea-si${grid ? ' alea-si-grid' : ''}${className ? ' ' + className : ''}`}
-      style={{ animationDelay: `${i * 0.06}s`, ['--si-y' as any]: navDir > 0 ? '60px' : '-60px' }}
+      style={{
+        animationDelay: `${i * 0.06}s`,
+        ['--si-y' as any]: navDir > 0 ? '60px' : '-60px',
+        ['--si-y-out' as any]: navDir > 0 ? '-60px' : '60px',
+      }}
     >
       {children}
     </div>
