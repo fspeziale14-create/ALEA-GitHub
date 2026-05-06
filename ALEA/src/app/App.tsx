@@ -1219,10 +1219,10 @@ function App() {
 
   const isDinner = shift === 'cena';
   
-  const bgColor = isDinner ? 'bg-[#080F1A]' : 'bg-[#E8E3D9]'; 
+  const bgColor = isDinner ? 'bg-[#0F172A]' : 'bg-[#F4F1EA]'; 
   const textColor = isDinner ? 'text-[#F4F1EA]' : 'text-[#2C2A28]'; 
   const mutedText = isDinner ? 'text-[#94A3B8]' : 'text-[#8C8A85]';
-  const cardBg = isDinner ? 'bg-[#1E293B] border-[#2D3F55] shadow-lg shadow-black/30' : 'bg-white border-[#D6CEBC] shadow-md shadow-black/8';
+  const cardBg = isDinner ? 'bg-[#1E293B] border-[#334155] shadow-[0_4px_24px_rgba(255,255,255,0.04),0_1px_4px_rgba(0,0,0,0.4)]' : 'bg-white border-[#EAE5DA] shadow-[0_4px_20px_rgba(0,0,0,0.08),0_1px_4px_rgba(0,0,0,0.04)]';
   const accentColor = isDinner ? 'text-[#967D62]' : 'text-[#967D62]'; 
   const accentBg = isDinner ? 'bg-[#967D62]/10 border-[#967D62]/20' : 'bg-[#967D62]/10 border-[#967D62]/30';
 
