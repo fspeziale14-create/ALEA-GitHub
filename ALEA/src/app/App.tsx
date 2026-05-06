@@ -56,10 +56,10 @@ const staggerCSS = `
   animation: alea-si-out 0.5s cubic-bezier(0.4, 0, 0.8, 0) forwards !important;
   transform: translateY(0) !important;
 }
-.dark div.rounded-xl.border, .dark div.rounded-2xl.border {
+.dark div.rounded-xl.border, .dark div.rounded-2xl.border, .dark button.rounded-2xl.border {
   box-shadow: 0 8px 32px rgba(0,0,0,0.5) !important;
 }
-div.rounded-xl.border, div.rounded-2xl.border {
+div.rounded-xl.border, div.rounded-2xl.border, button.rounded-2xl.border {
   box-shadow: 0 6px 28px rgba(0,0,0,0.14), 0 2px 8px rgba(0,0,0,0.08) !important;
 }
 .alea-card {
