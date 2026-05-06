@@ -1222,7 +1222,10 @@ function App() {
   const bgColor = isDinner ? 'bg-[#0F172A]' : 'bg-[#F4F1EA]'; 
   const textColor = isDinner ? 'text-[#F4F1EA]' : 'text-[#2C2A28]'; 
   const mutedText = isDinner ? 'text-[#94A3B8]' : 'text-[#8C8A85]';
-  const cardBg = isDinner ? 'bg-[#1E293B] border-[#334155] shadow-2xl shadow-black/60' : 'bg-white border-[#EAE5DA] shadow-xl shadow-black/15';
+  const cardBg = isDinner ? 'bg-[#1E293B] border-[#334155]' : 'bg-white border-[#EAE5DA]';
+  const cardStyle = isDinner
+    ? { boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }
+    : { boxShadow: '0 4px 24px rgba(0,0,0,0.1)' };
   const accentColor = isDinner ? 'text-[#967D62]' : 'text-[#967D62]'; 
   const accentBg = isDinner ? 'bg-[#967D62]/10 border-[#967D62]/20' : 'bg-[#967D62]/10 border-[#967D62]/30';
 
@@ -2328,7 +2331,8 @@ function App() {
               navKey={navCount}
               navDir={navDirection}
               isDinner={isDinner} textColor={textColor} mutedText={mutedText}
-              cardBg={cardBg} accentColor={accentColor} accentBg={accentBg}
+              cardBg={cardBg}
+                cardStyle={cardStyle} cardStyle={cardStyle} accentColor={accentColor} accentBg={accentBg}
               selectedDate={selectedDate}
               planTab={planTab} setPlanTab={setPlanTab}
               visibleTabs={['sala', 'cucina']}
@@ -2393,7 +2397,7 @@ function App() {
               navKey={navCount}
               navDir={navDirection}
               isDinner={isDinner} textColor={textColor} mutedText={mutedText}
-              cardBg={cardBg} accentColor={accentColor} accentBg={accentBg} bgColor={bgColor}
+              cardBg={cardBg} cardStyle={cardStyle} accentColor={accentColor} accentBg={accentBg} bgColor={bgColor}
               selectedDate={selectedDate} shift={shift}
               formattedDate={formattedDate} mobileDate={mobileDate}
               isToday={isToday} isTargetShiftClosed={isTargetShiftClosed}
@@ -2429,7 +2433,7 @@ function App() {
               navDir={navDirection}
               navDir={navDirection}
               isDinner={isDinner} textColor={textColor} mutedText={mutedText}
-              cardBg={cardBg} accentColor={accentColor}
+              cardBg={cardBg} cardStyle={cardStyle} accentColor={accentColor}
               waiterRatio={waiterRatio} setWaiterRatio={setWaiterRatio}
               cookRatio={cookRatio} setCookRatio={setCookRatio}
               maxCapacity={maxCapacity} setMaxCapacity={setMaxCapacity}
@@ -2510,8 +2514,9 @@ function App() {
                       <button
                         onClick={() => handleMenuSubViewChange(card.key as any)}
                         className={`group text-left p-8 rounded-2xl border flex flex-col w-full h-full transition-all duration-200 hover:shadow-xl hover:-translate-y-1 ${
-                          isDinner ? 'bg-[#1E293B] border-[#334155] hover:border-[#967D62] shadow-2xl shadow-black/60' : 'bg-white border-[#EAE5DA] hover:border-[#967D62] hover:bg-white shadow-xl shadow-black/15'
+                          isDinner ? 'bg-[#1E293B] border-[#334155] hover:border-[#967D62]' : 'bg-white border-[#EAE5DA] hover:border-[#967D62] hover:bg-white'
                         }`}
+                        style={cardStyle}
                       >
                         <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-6 transition-colors ${
                           isDinner ? 'bg-[#967D62]/20 text-[#C4A882] group-hover:bg-[#967D62]/30' : 'bg-[#967D62]/10 text-[#967D62] group-hover:bg-[#967D62]/20'
@@ -2553,7 +2558,7 @@ function App() {
                 navKey={navCount}
                 navDir={navDirection}
                 isDinner={isDinner} textColor={textColor} mutedText={mutedText}
-                cardBg={cardBg} accentColor={accentColor} accentBg={accentBg}
+                cardBg={cardBg} cardStyle={cardStyle} accentColor={accentColor} accentBg={accentBg}
                 selectedDate={selectedDate}
                 planTab="inventario" setPlanTab={() => {}}
                 hideTabBar hideHeader
@@ -2627,7 +2632,7 @@ function App() {
                 navKey={navCount}
                 navDir={navDirection}
                 isDinner={isDinner} textColor={textColor} mutedText={mutedText}
-                cardBg={cardBg} accentColor={accentColor} accentBg={accentBg}
+                cardBg={cardBg} cardStyle={cardStyle} accentColor={accentColor} accentBg={accentBg}
                 selectedDate={selectedDate}
                 planTab="ricette" setPlanTab={() => {}}
                 hideTabBar hideHeader
@@ -2698,6 +2703,7 @@ function App() {
                 textColor={textColor}
                 mutedText={mutedText}
                 cardBg={cardBg}
+                cardStyle={cardStyle}
                 accentColor={'text-[#967D62]'}
                 supabase={supabase}
                 isLoggedIn={isLoggedIn}
