@@ -220,7 +220,7 @@ export function DashboardView(props: DashboardViewProps) {
   return (
              <main className={`flex-1 p-6 md:p-8 space-y-8 ${bgColor} transition-colors duration-500 max-w-7xl mx-auto w-full`}>
                 <>
-                <SI i={idx(0, 5, navDir)} navKey={navKey} navDir={navDir}>
+                <SI i={idx(0, 5, navDir)} title={true} title={true} navKey={navKey} navDir={navDir}>
                 <div className={`flex items-center justify-center py-2 px-4 rounded-lg border ${accentBg} ${accentColor}`}>
                      <div className="flex items-center gap-2">
                         <Zap className="w-4 h-4" />
