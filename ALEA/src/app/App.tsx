@@ -20,7 +20,7 @@ import { DashboardView } from './DashboardView';
 import { PianificazioneView } from './PianificazioneView';
 import { ImpostazioniView } from './ImpostazioniView';
 import { Separator } from './components/ui/separator';
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, motion, LayoutGroup } from 'motion/react';
 
 const staggerCSS = `
 @keyframes alea-si-in {
@@ -64,6 +64,10 @@ div.rounded-xl.border, div.rounded-2xl.border, button.rounded-2xl.border, button
 }
 .alea-card {
   box-shadow: 0 6px 28px rgba(0,0,0,0.14), 0 2px 8px rgba(0,0,0,0.08) !important;
+}
+div.no-shadow, div.no-shadow.rounded-xl.border, div.no-shadow.rounded-2xl.border,
+.dark div.no-shadow, .dark div.no-shadow.rounded-xl.border, .dark div.no-shadow.rounded-2xl.border {
+  box-shadow: none !important;
 }
 `;
 if (typeof document !== 'undefined') {
@@ -2506,6 +2510,7 @@ function App() {
               <div className="flex-1 flex items-center">
                 <div className="w-full py-8 space-y-6">
                   {/* Helper per card uniforme */}
+                  <LayoutGroup>
                   {([
                     { key: 'inventario', title: 'Inventario & Magazzino', description: 'Ingredienti, fornitori, scorte ideali e importazione inventario.', icon: Boxes },
                     { key: 'ricette',    title: 'Ricette',                description: 'Gestisci le ricette dei piatti con ingredienti, dosi e preparazioni.',           icon: BookOpen },
@@ -2519,9 +2524,13 @@ function App() {
                     const cardIdx = navDirection > 0 ? i + 1 : (6 - i);
                     rows[rowIdx].push(
                       <SI key={card.key} i={cardIdx} navKey={navCount} navDir={navDirection}>
-                      <button
+                      <motion.button
+                        layoutId={`menu-card-${card.key}`}
                         onClick={() => handleMenuSubViewChange(card.key as any)}
-                        className={`group text-left p-8 rounded-2xl border flex flex-col w-full h-full transition-all duration-200 hover:shadow-xl hover:-translate-y-1 ${
+                        whileHover={{ y: -4, boxShadow: isDinner ? '0 20px 40px rgba(0,0,0,0.5)' : '0 20px 40px rgba(0,0,0,0.12)' }}
+                        whileTap={{ scale: 0.97 }}
+                        transition={{ layout: { duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }, default: { duration: 0.18 } }}
+                        className={`group text-left p-8 rounded-2xl border flex flex-col w-full h-full ${
                           isDinner ? 'bg-[#1E293B] border-[#334155] hover:border-[#967D62]' : 'bg-white border-[#EAE5DA] hover:border-[#967D62] hover:bg-white'
                         }`}
                         style={cardStyle}
@@ -2536,13 +2545,14 @@ function App() {
                         <div className={`flex items-center gap-1.5 mt-6 text-sm font-semibold ${isDinner ? 'text-[#C4A882]' : 'text-[#967D62]'}`}>
                           Apri <ChevronRight className="w-4 h-4" />
                         </div>
-                      </button>
+                      </motion.button>
                       </SI>
                     );
                     return rows;
                   }, []).map((row, i) => (
                     <div key={i} className="grid grid-cols-1 md:grid-cols-3 gap-6">{row}</div>
                   ))}
+                  </LayoutGroup>
                 </div>
               </div>
             </main>
@@ -2550,7 +2560,11 @@ function App() {
 
           {/* ========== MENU / INVENTARIO ========== */}
           {menuSubView === 'inventario' && (
-            <>
+            <motion.div
+              layoutId="menu-card-inventario"
+              className="flex-1 flex flex-col min-h-0"
+              transition={{ layout: { duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] } }}
+            >
               <div className={`flex items-center gap-3 px-6 pt-6 pb-2 max-w-6xl mx-auto w-full`}>
                 <button
                   onClick={() => handleMenuSubViewChange('landing')}
@@ -2619,12 +2633,16 @@ function App() {
                 menuPrices={menuPrices} setMenuPrices={setMenuPrices} saveMenuPrice={saveMenuPrice}
                 supabase={supabase} isLoggedIn={isLoggedIn}
               />
-            </>
+            </motion.div>
           )}
 
           {/* ========== MENU / RICETTE ========== */}
           {menuSubView === 'ricette' && (
-            <>
+            <motion.div
+              layoutId="menu-card-ricette"
+              className="flex-1 flex flex-col min-h-0"
+              transition={{ layout: { duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] } }}
+            >
               <div className={`flex items-center gap-3 px-6 pt-6 pb-2 max-w-6xl mx-auto w-full`}>
                 <button
                   onClick={() => handleMenuSubViewChange('landing')}
@@ -2693,12 +2711,16 @@ function App() {
                 menuPrices={menuPrices} setMenuPrices={setMenuPrices} saveMenuPrice={saveMenuPrice}
                 supabase={supabase} isLoggedIn={isLoggedIn}
               />
-            </>
+            </motion.div>
           )}
 
           {/* ========== MENU / CONSUMI INTERNI ========== */}
           {menuSubView === 'consumi' && (
-            <>
+            <motion.div
+              layoutId="menu-card-consumi"
+              className="flex-1 flex flex-col min-h-0"
+              transition={{ layout: { duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] } }}
+            >
               <div className={`flex items-center gap-3 px-6 pt-6 pb-2 max-w-6xl mx-auto w-full`}>
                 <button onClick={() => handleMenuSubViewChange('landing')} className={`flex items-center gap-1.5 text-sm font-medium ${mutedText} hover:${textColor} transition-colors`}>
                   <ArrowLeft className="w-4 h-4" /> Menu
@@ -2716,12 +2738,16 @@ function App() {
                 supabase={supabase}
                 isLoggedIn={isLoggedIn}
               />
-            </>
+            </motion.div>
           )}
 
           {/* ========== MENU / STORICO ========== */}
           {menuSubView === 'storico' && (
-            <>
+            <motion.div
+              layoutId="menu-card-storico"
+              className="flex-1 flex flex-col min-h-0"
+              transition={{ layout: { duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] } }}
+            >
               <div className={`flex items-center gap-3 px-6 pt-6 pb-2 max-w-6xl mx-auto w-full`}>
                 <button onClick={() => handleMenuSubViewChange('landing')} className={`flex items-center gap-1.5 text-sm font-medium ${mutedText} hover:${textColor} transition-colors`}>
                   <ArrowLeft className="w-4 h-4" /> Menu
@@ -2738,12 +2764,16 @@ function App() {
                 supabase={supabase}
                 isLoggedIn={isLoggedIn}
               />
-            </>
+            </motion.div>
           )}
 
           {/* ========== MENU / SIMULAZIONE ========== */}
           {menuSubView === 'simulazione' && (
-            <>
+            <motion.div
+              layoutId="menu-card-simulazione"
+              className="flex-1 flex flex-col min-h-0"
+              transition={{ layout: { duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] } }}
+            >
               <div className={`flex items-center gap-3 px-6 pt-6 pb-2 max-w-6xl mx-auto w-full`}>
                 <button onClick={() => handleMenuSubViewChange('landing')} className={`flex items-center gap-1.5 text-sm font-medium ${mutedText} hover:${textColor} transition-colors`}>
                   <ArrowLeft className="w-4 h-4" /> Menu
@@ -2760,12 +2790,16 @@ function App() {
                 supabase={supabase}
                 isLoggedIn={isLoggedIn}
               />
-            </>
+            </motion.div>
           )}
 
           {/* ========== MENU / REDDITIVITÀ ========== */}
           {menuSubView === 'redditività' && (
-            <>
+            <motion.div
+              layoutId="menu-card-redditività"
+              className="flex-1 flex flex-col min-h-0"
+              transition={{ layout: { duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] } }}
+            >
               <div className={`flex items-center gap-3 px-6 pt-6 pb-2 max-w-6xl mx-auto w-full`}>
                 <button
                   onClick={() => handleMenuSubViewChange('landing')}
@@ -2785,7 +2819,7 @@ function App() {
                 supabase={supabase}
                 isLoggedIn={isLoggedIn}
               />
-            </>
+            </motion.div>
           )}
           </motion.div>
           </AnimatePresence>
