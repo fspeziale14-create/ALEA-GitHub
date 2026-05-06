@@ -22,7 +22,6 @@ import { ImpostazioniView } from './ImpostazioniView';
 import { Separator } from './components/ui/separator';
 import { AnimatePresence, motion } from 'motion/react';
 
-// ── ANIMAZIONI STAGGER ───────────────────────────────────────
 const staggerCSS = `
 @keyframes alea-si-in {
   from { transform: translateY(var(--si-y, 60px)); }
@@ -35,6 +34,10 @@ const staggerCSS = `
 .alea-si {
   transform: translateY(var(--si-y, 60px));
   animation: alea-si-in 1.1s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+.alea-si-title {
+  transform: translateY(var(--si-y, 18px));
+  animation: alea-si-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 .alea-si-grid { display: contents; }
 .alea-si-grid > * {
@@ -62,15 +65,18 @@ if (typeof document !== 'undefined') {
 function PageStagger({ children, className }: { children: React.ReactNode; className?: string }) {
   return <div className={className}>{children}</div>;
 }
-function SI({ children, className, i = 0, navKey = 0, navDir = 1, grid = false }: { children: React.ReactNode; className?: string; i?: number; navKey?: number; navDir?: number; grid?: boolean }) {
+function SI({ children, className, i = 0, navKey = 0, navDir = 1, grid = false, title = false }: { children: React.ReactNode; className?: string; i?: number; navKey?: number; navDir?: number; grid?: boolean; title?: boolean }) {
+  const cls = title ? 'alea-si-title' : `alea-si${grid ? ' alea-si-grid' : ''}`;
+  const yIn = navDir > 0 ? (title ? '18px' : '60px') : (title ? '-18px' : '-60px');
+  const yOut = navDir > 0 ? (title ? '-18px' : '-60px') : (title ? '18px' : '60px');
   return (
     <div
       key={navKey}
-      className={`alea-si${grid ? ' alea-si-grid' : ''}${className ? ' ' + className : ''}`}
+      className={`${cls}${className ? ' ' + className : ''}`}
       style={{
         animationDelay: `${i * 0.06}s`,
-        ['--si-y' as any]: navDir > 0 ? '60px' : '-60px',
-        ['--si-y-out' as any]: navDir > 0 ? '-60px' : '60px',
+        ['--si-y' as any]: yIn,
+        ['--si-y-out' as any]: yOut,
       }}
     >
       {children}
@@ -2445,7 +2451,7 @@ function App() {
           {activeView === "Recensioni" && (
             <main key={`recensioni-${navCount}`} className="flex-1 p-6 md:p-8 max-w-6xl mx-auto w-full">
               <div className="space-y-6">
-                <SI i={navDirection > 0 ? 0 : 1} navKey={navCount} navDir={navDirection}>
+                <SI i={navDirection > 0 ? 0 : 1} navKey={navCount} navDir={navDirection} title={true}>
                   <h1 className={`text-3xl font-bold tracking-tight ${textColor}`}>Recensioni</h1>
                   <p className={`${mutedText} mt-1`}>Collega le recensioni agli ordini per capire cosa viene apprezzato o criticato — e agisci direttamente sul menu.</p>
                 </SI>
@@ -2479,7 +2485,7 @@ function App() {
           >
           {menuSubView === 'landing' && (
             <main key={`menu-landing-${navCount}`} className="flex-1 flex flex-col p-6 md:p-8 max-w-6xl mx-auto w-full">
-              <SI i={0} navKey={navCount} navDir={navDirection}>
+              <SI i={0} navKey={navCount} navDir={navDirection} title={true}>
               <div>
                 <h1 className={`text-3xl font-bold tracking-tight ${textColor}`}>Menu</h1>
                 <p className={`${mutedText} mt-1`}>Gestisci magazzino, ricette e analisi della redditività.</p>
