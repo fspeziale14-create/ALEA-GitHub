@@ -102,6 +102,7 @@ interface PianificazioneViewProps {
   isLoggedIn: boolean;
   navKey?: number;
   navDir?: number;
+  cardStyle?: React.CSSProperties;
 }
 
 export function PianificazioneView(props: PianificazioneViewProps) {
@@ -114,6 +115,7 @@ export function PianificazioneView(props: PianificazioneViewProps) {
     visibleTabs,
     navKey = 0,
     navDir = 1,
+    cardStyle = {},
   } = p;
 
   // Aliases usati nel JSX originale
@@ -845,7 +847,7 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
                                 {/* ===== COLONNA 1: MAGAZZINO ===== */}
-                                <Card className={cardBg}>
+                                <Card className={cardBg} style={cardStyle || { boxShadow: isDinner ? "0 8px 32px rgba(0,0,0,0.5)" : "0 4px 24px rgba(0,0,0,0.1)" }}>
                                     <CardHeader>
                                         <CardTitle className={`flex items-center gap-2 ${textColor}`}><ClipboardList className={`w-5 h-5 ${accentColor}`} /> Magazzino</CardTitle>
                                         <CardDescription className={mutedText}>Inserisci gli ingredienti con quantità ideale e attuale.</CardDescription>
@@ -1152,7 +1154,7 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                                 </Card>
 
                                 {/* ===== COLONNA 2: PREPARAZIONI ===== */}
-                                <Card className={cardBg}>
+                                <Card className={cardBg} style={cardStyle || { boxShadow: isDinner ? "0 8px 32px rgba(0,0,0,0.5)" : "0 4px 24px rgba(0,0,0,0.1)" }}>
                                     <CardHeader>
                                         <CardTitle className={`flex items-center gap-2 ${textColor}`}><CookingPot className={`w-5 h-5 ${accentColor}`} /> Preparazioni Interne</CardTitle>
                                         <CardDescription className={mutedText}>Semi-lavorati fatti in casa. Definisci la ricetta e usala come ingrediente nei piatti.</CardDescription>
@@ -1393,7 +1395,7 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                     <SI i={idx(1, 4, navDir)} navKey={navKey} navDir={navDir}>
                     {planTab === 'ricette' && (
                         <div className="space-y-6">
-                            <Card className={cardBg}>
+                            <Card className={cardBg} style={cardStyle || { boxShadow: isDinner ? "0 8px 32px rgba(0,0,0,0.5)" : "0 4px 24px rgba(0,0,0,0.1)" }}>
                                 <CardHeader>
                                     <CardTitle className={`flex items-center gap-2 ${textColor}`}><BookOpen className={`w-5 h-5 ${accentColor}`} /> Ricette dei Piatti</CardTitle>
                                     <CardDescription className={mutedText}>Per ogni piatto del menu, indica gli ingredienti e le preparazioni usate con le quantità per porzione.</CardDescription>
@@ -1706,7 +1708,7 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                                               className="alea-si"
                                               style={{ animationDelay: `${staggerI * 0.22}s`, ['--si-y' as any]: navDir > 0 ? '60px' : '-60px' } as any}
                                             >
-                                            <Card className={`${cardBg} overflow-hidden flex flex-col`}>
+                                            <Card className={`${cardBg} overflow-hidden flex flex-col`} style={{ boxShadow: isDinner ? "0 8px 32px rgba(0,0,0,0.5)" : "0 4px 24px rgba(0,0,0,0.1)" }}>
                                                 <CardHeader className="pb-3 border-b border-black/5 dark:border-white/5">
                                                     <CardTitle className={`flex justify-between items-center ${textColor}`}>
                                                         <div className="flex flex-col">
@@ -1835,7 +1837,7 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                     <SI i={idx(1, 4, navDir)} navKey={navKey} navDir={navDir}>
                     {planTab === 'cucina' && (
                         <div className="space-y-6">
-                            <Card className={cardBg}>
+                            <Card className={cardBg} style={cardStyle || { boxShadow: isDinner ? "0 8px 32px rgba(0,0,0,0.5)" : "0 4px 24px rgba(0,0,0,0.1)" }}>
                                 <CardHeader className="pb-3 border-b border-black/5 dark:border-white/5 flex flex-row items-center justify-between">
                                     <div>
                                         <CardTitle className={`text-lg ${textColor}`}>Impostazioni Periodo Ordine</CardTitle>
