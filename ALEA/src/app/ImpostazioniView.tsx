@@ -44,6 +44,7 @@ interface ImpostazioniViewProps {
   setActiveView: (v: string) => void;
   navKey?: number;
   navDir?: number;
+  cardStyle?: React.CSSProperties;
 }
 
 export function ImpostazioniView(props: ImpostazioniViewProps) {
@@ -57,6 +58,7 @@ export function ImpostazioniView(props: ImpostazioniViewProps) {
     dailyHours, handleGlobalHourChange, updateDailyHour, setActiveView,
     navKey = 0,
     navDir = 1,
+    cardStyle = {},
   } = props;
 
   return (
@@ -70,7 +72,7 @@ export function ImpostazioniView(props: ImpostazioniViewProps) {
                     </SI>
 
                     <SI i={idx(1, 4, navDir)} navKey={navKey} navDir={navDir}>
-                    <Card className={cardBg}>
+                    <Card className={cardBg} style={cardStyle}>
                         <CardHeader>
                             <CardTitle className={`flex items-center gap-2 ${textColor}`}><Users className={`w-5 h-5 ${accentColor}`} /> Rapporti Staff & Sala</CardTitle>
                             <CardDescription className={mutedText}>Alea calcolerà lo staff necessario dividendo le previsioni per questi valori.</CardDescription>
@@ -125,7 +127,7 @@ export function ImpostazioniView(props: ImpostazioniViewProps) {
                     </SI>
 
                     <SI i={idx(2, 4, navDir)} navKey={navKey} navDir={navDir}>
-                    <Card className={cardBg}>
+                    <Card className={cardBg} style={cardStyle}>
                         <CardHeader className="flex flex-row justify-between items-start">
                             <div>
                                 <CardTitle className={`flex items-center gap-2 ${textColor}`}><Clock className={`w-5 h-5 ${accentColor}`} /> Orari Turni (Default)</CardTitle>
