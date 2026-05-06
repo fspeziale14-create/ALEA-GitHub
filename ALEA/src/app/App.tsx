@@ -60,7 +60,7 @@ const staggerCSS = `
   box-shadow: 0 8px 32px rgba(0,0,0,0.5) !important;
 }
 .alea-card {
-  box-shadow: 0 4px 24px rgba(0,0,0,0.1) !important;
+  box-shadow: 0 6px 28px rgba(0,0,0,0.14), 0 2px 8px rgba(0,0,0,0.08) !important;
 }
 `;
 if (typeof document !== 'undefined') {
