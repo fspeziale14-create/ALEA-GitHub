@@ -815,7 +815,7 @@ export function PianificazioneView(props: PianificazioneViewProps) {
     <>
              <main className="flex-1 p-6 md:p-8 max-w-6xl mx-auto w-full">
                 <div className="space-y-6">
-                    <SI i={idx(0, 3, navDir)} navKey={navKey} navDir={navDir}>
+                    <SI i={idx(0, 4, navDir)} navKey={navKey} navDir={navDir}>
                     {!hideHeader && (
                     <div className="flex flex-col md:flex-row justify-between md:items-end gap-4">
                         <div>
@@ -838,7 +838,7 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                     </div>
                     )}
                     </SI>
-                    <SI i={idx(1, 3, navDir)} navKey={navKey} navDir={navDir}>
+                    <SI i={idx(1, 4, navDir)} navKey={navKey} navDir={navDir}>
                     {planTab === 'inventario' && (
                         <div className="space-y-6">
                             {/* RIGA DUE COLONNE: Magazzino + Ricette */}
@@ -1390,7 +1390,7 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                     )}
                     </SI>
 
-                    <SI i={idx(1, 3, navDir)} navKey={navKey} navDir={navDir}>
+                    <SI i={idx(1, 4, navDir)} navKey={navKey} navDir={navDir}>
                     {planTab === 'ricette' && (
                         <div className="space-y-6">
                             <Card className={cardBg}>
@@ -1638,46 +1638,45 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                     )}
                     </SI>
 
-                    <SI i={idx(1, 3, navDir)} navKey={navKey} navDir={navDir}>
+                    <SI i={idx(1, 4, navDir)} navKey={navKey} navDir={navDir}>
                     {planTab === 'sala' && (
                         <>
-                            {!weekGenerated ? (
-                                // ── CTA GRANDE: genera settimana ──────────────────────
-                                <button
-                                    onClick={isGeneratingStaff ? undefined : generateStaffPlan}
-                                    disabled={isGeneratingStaff}
-                                    className={`w-full mt-2 group relative overflow-hidden rounded-2xl border-2 transition-all duration-200
-                                        ${isGeneratingStaff ? 'cursor-not-allowed opacity-70' : 'cursor-pointer hover:shadow-lg hover:-translate-y-0.5'}
-                                        ${isDinner
-                                            ? 'border-[#334155] bg-[#1E293B] hover:border-[#967D62]'
-                                            : 'border-[#EAE5DA] bg-white hover:border-[#967D62]'
-                                        }`}
-                                >
-                                    <div className="flex flex-col items-center justify-center py-16 px-8 gap-5">
-                                        <div className={`w-20 h-20 rounded-2xl flex items-center justify-center transition-colors
-                                            ${isGeneratingStaff
-                                                ? (isDinner ? 'bg-[#967D62]/20' : 'bg-[#967D62]/10')
-                                                : (isDinner ? 'bg-[#967D62]/20 group-hover:bg-[#967D62]/30' : 'bg-[#967D62]/10 group-hover:bg-[#967D62]/20')
-                                            }`}>
-                                            {isGeneratingStaff
-                                                ? <Loader2 className="w-9 h-9 text-[#967D62] animate-spin" />
-                                                : <CalendarRange className="w-9 h-9 text-[#967D62]" />
-                                            }
-                                        </div>
-                                        <div className="text-center">
-                                            <h3 className={`text-xl font-bold mb-1.5 ${textColor}`}>
-                                                {isGeneratingStaff ? 'Generazione in corso…' : 'Genera Turni Settimana'}
-                                            </h3>
-                                            <p className={`text-sm ${mutedText}`}>
-                                                {isGeneratingStaff
-                                                    ? 'Calcolo previsioni AI su 14 mesi di storico e meteo.'
-                                                    : 'Ottimizza la programmazione da Lunedì a Domenica basandosi sullo storico AI e le previsioni meteo.'}
-                                            </p>
-                                        </div>
-                                        {!isGeneratingStaff && (
-                                            <div className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-colors
-                                                bg-[#967D62] text-white group-hover:bg-[#7A654E]`}>
-                                                Genera ora
+                        {!weekGenerated ? (
+                        <button
+                            onClick={isGeneratingStaff ? undefined : generateStaffPlan}
+                            disabled={isGeneratingStaff}
+                            className={`w-full mt-2 group relative overflow-hidden rounded-2xl border-2 transition-all duration-200
+                                ${isGeneratingStaff ? 'cursor-not-allowed opacity-70' : 'cursor-pointer hover:shadow-lg hover:-translate-y-0.5'}
+                                ${isDinner
+                                    ? 'border-[#334155] bg-[#1E293B] hover:border-[#967D62]'
+                                    : 'border-[#EAE5DA] bg-white hover:border-[#967D62]'
+                                }`}
+                        >
+                            <div className="flex flex-col items-center justify-center py-16 px-8 gap-5">
+                                <div className={`w-20 h-20 rounded-2xl flex items-center justify-center transition-colors
+                                    ${isGeneratingStaff
+                                        ? (isDinner ? 'bg-[#967D62]/20' : 'bg-[#967D62]/10')
+                                        : (isDinner ? 'bg-[#967D62]/20 group-hover:bg-[#967D62]/30' : 'bg-[#967D62]/10 group-hover:bg-[#967D62]/20')
+                                    }`}>
+                                    {isGeneratingStaff
+                                        ? <Loader2 className="w-9 h-9 text-[#967D62] animate-spin" />
+                                        : <CalendarRange className="w-9 h-9 text-[#967D62]" />
+                                    }
+                                </div>
+                                <div className="text-center">
+                                    <h3 className={`text-xl font-bold mb-1.5 ${textColor}`}>
+                                        {isGeneratingStaff ? 'Generazione in corso…' : 'Genera Turni Settimana'}
+                                    </h3>
+                                    <p className={`text-sm ${mutedText}`}>
+                                        {isGeneratingStaff
+                                            ? 'Calcolo previsioni AI su 14 mesi di storico e meteo.'
+                                            : 'Ottimizza la programmazione da Lunedì a Domenica basandosi sullo storico AI e le previsioni meteo.'}
+                                    </p>
+                                </div>
+                                {!isGeneratingStaff && (
+                                    <div className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-colors
+                                        bg-[#967D62] text-white group-hover:bg-[#7A654E]`}>
+                                        Genera ora
                                             </div>
                                         )}
                                     </div>
@@ -1696,12 +1695,18 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                                         </button>
                                     </div>
                                     <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-                                        {weeklyStaffData.map((dayData, idx) => {
+                                        {weeklyStaffData.map((dayData, cardIdx) => {
                                             const avviso = getFestivitaAvviso(dayData.data || '');
                                             const att: AttendibilitaResult = dayData.attendibilita ?? { livello: 'buona', motivazione: '', colore: 'bg-yellow-400', coloreBar: '#facc15' };
                                             const livelloLabel = att.livello.charAt(0).toUpperCase() + att.livello.slice(1);
+                                            const staggerI = navDir > 0 ? cardIdx : (weeklyStaffData.length - 1 - cardIdx);
                                             return (
-                                            <Card key={idx} className={`${cardBg} overflow-hidden flex flex-col`}>
+                                            <div
+                                              key={cardIdx}
+                                              className="alea-si"
+                                              style={{ animationDelay: `${staggerI * 0.22}s`, ['--si-y' as any]: navDir > 0 ? '60px' : '-60px' } as any}
+                                            >
+                                            <Card className={`${cardBg} overflow-hidden flex flex-col`}>
                                                 <CardHeader className="pb-3 border-b border-black/5 dark:border-white/5">
                                                     <CardTitle className={`flex justify-between items-center ${textColor}`}>
                                                         <div className="flex flex-col">
@@ -1817,6 +1822,7 @@ export function PianificazioneView(props: PianificazioneViewProps) {
 
                                                 </CardContent>
                                             </Card>
+                                            </div>
                                             );
                                         })}
                                     </div>
@@ -1826,7 +1832,7 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                     )}
                     </SI>
 
-                    <SI i={idx(1, 3, navDir)} navKey={navKey} navDir={navDir}>
+                    <SI i={idx(1, 4, navDir)} navKey={navKey} navDir={navDir}>
                     {planTab === 'cucina' && (
                         <div className="space-y-6">
                             <Card className={cardBg}>
@@ -1919,7 +1925,7 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                 </div>
 
                 {/* -- Accesso secondario: card stile Menu -- */}
-                <SI i={idx(2, 3, navDir)} navKey={navKey} navDir={navDir}>
+                <SI i={idx(3, 4, navDir)} navKey={navKey} navDir={navDir}>
                 {planTab !== 'inventario' && planTab !== 'ricette' && (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-5 pt-2">
                     {/* Prenotazioni — disabilitata */}
