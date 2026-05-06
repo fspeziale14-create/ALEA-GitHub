@@ -2469,26 +2469,25 @@ function App() {
                 <div className="w-full py-8 space-y-6">
                   {/* Helper per card uniforme */}
                   {([
-                    // Riga 1
                     { key: 'inventario', title: 'Inventario & Magazzino', description: 'Ingredienti, fornitori, scorte ideali e importazione inventario.', icon: Boxes },
                     { key: 'ricette',    title: 'Ricette',                description: 'Gestisci le ricette dei piatti con ingredienti, dosi e preparazioni.',           icon: BookOpen },
                     { key: 'consumi',    title: 'Consumi Interni',        description: 'Scarti, pasti personale e consumi operativi. Analisi e statistiche.',              icon: Flame },
-                    // Riga 2
                     { key: 'redditività', title: 'Redditività & Analisi', description: 'Analisi dei costi, margini di contribuzione e profittabilità del menu.', icon: PiggyBank },
                     { key: 'storico',     title: 'Storico Analisi',       description: "Consulta le analisi passate, confronta periodi e monitora l'evoluzione del menu.",  icon: History },
                     { key: 'simulazione', title: 'Simulazione',           description: 'Sandbox per simulare variazioni di prezzo, quantità e frequenze.',                   icon: Zap },
                   ] as { key: string; title: string; description: string; icon: React.ComponentType<any> }[]).reduce<React.ReactNode[][]>((rows, card, i) => {
                     const rowIdx = Math.floor(i / 3);
                     if (!rows[rowIdx]) rows[rowIdx] = [];
+                    const cardIdx = navDirection > 0 ? i + 1 : (6 - i);
                     rows[rowIdx].push(
+                      <SI key={card.key} i={cardIdx} navKey={navCount} navDir={navDirection}>
                       <motion.button
-                        key={card.key}
                         layoutId={`menu-card-${card.key}`}
                         onClick={() => handleMenuSubViewChange(card.key as any)}
                         whileHover={{ y: -4, boxShadow: '0 20px 40px rgba(0,0,0,0.12)' }}
                         whileTap={{ scale: 0.98 }}
                         transition={{ layout: { duration: 0.35 }, default: { duration: 0.18 } }}
-                        className={`group text-left p-8 rounded-2xl border flex flex-col ${
+                        className={`group text-left p-8 rounded-2xl border flex flex-col w-full h-full ${
                           isDinner ? 'bg-[#1E293B] border-[#334155] hover:border-[#967D62]' : 'bg-[#FDFAF5] border-[#EAE5DA] hover:border-[#967D62] hover:bg-white'
                         }`}
                       >
@@ -2503,10 +2502,11 @@ function App() {
                           Apri <ChevronRight className="w-4 h-4" />
                         </div>
                       </motion.button>
+                      </SI>
                     );
                     return rows;
                   }, []).map((row, i) => (
-                    <SI key={i} i={i + 1} navKey={navCount} navDir={navDirection} className="grid grid-cols-1 md:grid-cols-3 gap-6">{row}</SI>
+                    <div key={i} className="grid grid-cols-1 md:grid-cols-3 gap-6">{row}</div>
                   ))}
                 </div>
               </div>
