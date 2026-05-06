@@ -815,7 +815,7 @@ export function PianificazioneView(props: PianificazioneViewProps) {
     <>
              <main className="flex-1 p-6 md:p-8 max-w-6xl mx-auto w-full">
                 <div className="space-y-6">
-                    <SI i={idx(0, 4, navDir)} navKey={navKey} navDir={navDir}>
+                    <SI i={idx(0, 4, navDir)} title={true} title={true} navKey={navKey} navDir={navDir}>
                     {!hideHeader && (
                     <div className="flex flex-col md:flex-row justify-between md:items-end gap-4">
                         <div>
