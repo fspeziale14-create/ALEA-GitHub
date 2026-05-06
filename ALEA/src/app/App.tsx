@@ -2510,7 +2510,7 @@ function App() {
                       <button
                         onClick={() => handleMenuSubViewChange(card.key as any)}
                         className={`group text-left p-8 rounded-2xl border flex flex-col w-full h-full transition-all duration-200 hover:shadow-xl hover:-translate-y-1 ${
-                          isDinner ? 'bg-[#1E293B] border-[#334155] hover:border-[#967D62]' : 'bg-[#FDFAF5] border-[#EAE5DA] hover:border-[#967D62] hover:bg-white'
+                          isDinner ? 'bg-[#1E293B] border-[#334155] hover:border-[#967D62] shadow-2xl shadow-black/60' : 'bg-white border-[#EAE5DA] hover:border-[#967D62] hover:bg-white shadow-xl shadow-black/15'
                         }`}
                       >
                         <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-6 transition-colors ${
@@ -2697,7 +2697,7 @@ function App() {
                 isDinner={isDinner}
                 textColor={textColor}
                 mutedText={mutedText}
-                cardBg={isDinner ? 'bg-[#1E293B] border-[#334155]' : 'bg-white border-[#EAE5DA] shadow-sm'}
+                cardBg={cardBg}
                 accentColor={'text-[#967D62]'}
                 supabase={supabase}
                 isLoggedIn={isLoggedIn}
