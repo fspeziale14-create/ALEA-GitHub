@@ -1876,7 +1876,7 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                                         <p className={mutedText}>Totale aggregato per i prossimi {budgetDuration} giorni</p>
                                     </div>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                        <div className={`p-8 rounded-2xl border-2 ${isDinner ? 'border-[#334155] bg-[#1E293B]' : 'border-[#EAE5DA] bg-white shadow-sm'}`}>
+                                        <div className={`p-8 rounded-2xl border-2 ${isDinner ? 'border-[#334155] bg-[#1E293B]' : 'border-[#EAE5DA] bg-white shadow-xl shadow-black/15'}`}>
                                             <div className={`flex items-center justify-center gap-2 text-xl font-black mb-6 ${accentColor}`}><Sun className="w-6 h-6" /> FABBISOGNO PRANZO</div>
                                             <div className="flex flex-col items-center text-center mb-8">
                                                 <span className={`text-6xl font-black tracking-tighter tabular-nums ${textColor}`}>{budgetData.pranzo.stimati}</span>
@@ -1893,7 +1893,7 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className={`p-8 rounded-2xl border-2 ${isDinner ? 'border-[#334155] bg-[#1E293B]' : 'border-[#EAE5DA] bg-white shadow-sm'}`}>
+                                        <div className={`p-8 rounded-2xl border-2 ${isDinner ? 'border-[#334155] bg-[#1E293B]' : 'border-[#EAE5DA] bg-white shadow-xl shadow-black/15'}`}>
                                             <div className={`flex items-center justify-center gap-2 text-xl font-black mb-6 ${accentColor}`}><Moon className="w-6 h-6" /> FABBISOGNO CENA</div>
                                             <div className="flex flex-col items-center text-center mb-8">
                                                 <span className={`text-6xl font-black tracking-tighter tabular-nums ${textColor}`}>{budgetData.cena.stimati}</span>
