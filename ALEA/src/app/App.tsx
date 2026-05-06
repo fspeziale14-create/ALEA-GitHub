@@ -1222,7 +1222,7 @@ function App() {
   const bgColor = isDinner ? 'bg-[#0F172A]' : 'bg-[#F4F1EA]'; 
   const textColor = isDinner ? 'text-[#F4F1EA]' : 'text-[#2C2A28]'; 
   const mutedText = isDinner ? 'text-[#94A3B8]' : 'text-[#8C8A85]';
-  const cardBg = isDinner ? 'bg-[#1E293B] border-[#334155] shadow-[0_4px_24px_rgba(255,255,255,0.04),0_1px_4px_rgba(0,0,0,0.4)]' : 'bg-white border-[#EAE5DA] shadow-[0_4px_20px_rgba(0,0,0,0.08),0_1px_4px_rgba(0,0,0,0.04)]';
+  const cardBg = isDinner ? 'bg-[#1E293B] border-[#334155] shadow-2xl shadow-black/60' : 'bg-white border-[#EAE5DA] shadow-xl shadow-black/15';
   const accentColor = isDinner ? 'text-[#967D62]' : 'text-[#967D62]'; 
   const accentBg = isDinner ? 'bg-[#967D62]/10 border-[#967D62]/20' : 'bg-[#967D62]/10 border-[#967D62]/30';
 
