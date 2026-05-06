@@ -30,12 +30,12 @@ const staggerCSS = `
 }
 .alea-si {
   transform: translateY(var(--si-y, 60px));
-  animation: alea-si 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: alea-si 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 .alea-si-grid { display: contents; }
 .alea-si-grid > * {
   transform: translateY(var(--si-y, 60px));
-  animation: alea-si 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: alea-si 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 `;
 if (typeof document !== 'undefined') {
@@ -51,7 +51,7 @@ function SI({ children, className, i = 0, navKey = 0, navDir = 1, grid = false }
     <div
       key={navKey}
       className={`alea-si${grid ? ' alea-si-grid' : ''}${className ? ' ' + className : ''}`}
-      style={{ animationDelay: `${i * 0.22}s`, ['--si-y' as any]: navDir > 0 ? '60px' : '-60px' }}
+      style={{ animationDelay: `${i * 0.06}s`, ['--si-y' as any]: navDir > 0 ? '60px' : '-60px' }}
     >
       {children}
     </div>
