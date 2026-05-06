@@ -62,7 +62,7 @@ export function ImpostazioniView(props: ImpostazioniViewProps) {
   return (
              <main className="flex-1 p-6 md:p-8 max-w-4xl mx-auto w-full">
                 <div className="space-y-8">
-                    <SI i={idx(0, 4, navDir)} navKey={navKey} navDir={navDir}>
+                    <SI i={idx(0, 4, navDir)} title={true} title={true} navKey={navKey} navDir={navDir}>
                         <div>
                             <h1 className={`text-3xl font-bold tracking-tight ${textColor}`}>Impostazioni</h1>
                             <p className={`${mutedText} mt-1`}>Configura i parametri operativi del ristorante.</p>
