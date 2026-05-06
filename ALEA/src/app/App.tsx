@@ -51,7 +51,7 @@ function SI({ children, className, i = 0, navKey = 0, navDir = 1, grid = false }
     <div
       key={navKey}
       className={`alea-si${grid ? ' alea-si-grid' : ''}${className ? ' ' + className : ''}`}
-      style={{ animationDelay: `${i * 0.15}s`, ['--si-y' as any]: navDir > 0 ? '60px' : '-60px' }}
+      style={{ animationDelay: `${i * 0.22}s`, ['--si-y' as any]: navDir > 0 ? '60px' : '-60px' }}
     >
       {children}
     </div>
