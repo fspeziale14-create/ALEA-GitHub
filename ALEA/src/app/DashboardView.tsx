@@ -71,6 +71,7 @@ interface DashboardViewProps {
   setIsMenuModalOpen?: (v: boolean) => void;
   navKey?: number;
   navDir?: number;
+  cardStyle?: React.CSSProperties;
 }
 
 export function DashboardView(props: DashboardViewProps) {
@@ -96,6 +97,7 @@ export function DashboardView(props: DashboardViewProps) {
     actualCovers = '', setActualCovers = () => {},
     navKey = 0,
     navDir = 1,
+    cardStyle = {},
     finalBooked = '', setFinalBooked = () => {},
     predictedCovers = 0,
     bookedGuests = '', setBookedGuests = () => {},
@@ -149,7 +151,7 @@ export function DashboardView(props: DashboardViewProps) {
                 </SI>
 
                 <SI i={1} navKey={navKey} navDir={navDir}>
-                    <Card className={cardBg}>
+                    <Card className={cardBg} style={cardStyle}>
                         <CardHeader><CardTitle className={`text-lg ${textColor}`}>Nuova Prenotazione (Manuale)</CardTitle></CardHeader>
                         <CardContent>
                             <div className="flex flex-col md:flex-row gap-4 items-end">
@@ -181,7 +183,7 @@ export function DashboardView(props: DashboardViewProps) {
                 </SI>
 
                 <SI i={2} navKey={navKey} navDir={navDir}>
-                    <Card className={cardBg}>
+                    <Card className={cardBg} style={cardStyle}>
                         <CardHeader><CardTitle className={`text-lg ${textColor}`}>Lista Tavoli</CardTitle></CardHeader>
                         <CardContent>
                             {currentShiftReservations.length === 0 ? (
@@ -232,7 +234,7 @@ export function DashboardView(props: DashboardViewProps) {
                 <SI i={idx(1, 5, navDir)} navKey={navKey} navDir={navDir}>
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                     <SI i={idx(1, 5, navDir)} navKey={navKey} navDir={navDir} grid={true}>
-                    <Card className={`${cardBg} flex flex-col justify-center`}>
+                    <Card className={`${cardBg} flex flex-col justify-center`} style={cardStyle}>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
                             <CardTitle className={`text-sm font-medium ${mutedText}`}>Meteo a {shift === 'pranzo' ? 'Pranzo (13:00)' : 'Cena (20:00)'}</CardTitle>
                         </CardHeader>
@@ -247,7 +249,7 @@ export function DashboardView(props: DashboardViewProps) {
                     </SI>
                     
                     <SI i={idx(2, 5, navDir)} navKey={navKey} navDir={navDir} grid={true}>
-                    <Card className={`${cardBg} flex flex-col justify-center`}>
+                    <Card className={`${cardBg} flex flex-col justify-center`} style={cardStyle}>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
                             <CardTitle className={`text-sm font-medium ${mutedText}`}>Prenotati Iniziali</CardTitle>
                             <CalendarCheck className={`h-4 w-4 ${mutedText}`} />
@@ -365,7 +367,7 @@ export function DashboardView(props: DashboardViewProps) {
                     {/* CARD STAFF — metà larghezza, con messaggio convocazione esplicito */}
                     <div className="md:col-span-6 flex flex-col gap-4">
                         {/* Bottone menu */}
-                        <Card className={`${cardBg}`}>
+                        <Card className={`${cardBg}`} style={cardStyle}>
                             <CardContent className="pt-4 pb-4">
                                 <Button onClick={() => setIsMenuModalOpen(true)} className={`w-full py-4 flex items-center justify-center gap-2 bg-[#967D62] hover:bg-[#7A654E] text-white font-semibold text-sm shadow-sm`}>
                                     <BookOpen className="w-4 h-4" /> Gestisci Disponibilità Menu
