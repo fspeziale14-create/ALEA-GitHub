@@ -2331,8 +2331,7 @@ function App() {
               navKey={navCount}
               navDir={navDirection}
               isDinner={isDinner} textColor={textColor} mutedText={mutedText}
-              cardBg={cardBg}
-                cardStyle={cardStyle} cardStyle={cardStyle} accentColor={accentColor} accentBg={accentBg}
+              cardBg={cardBg} cardStyle={cardStyle} accentColor={accentColor} accentBg={accentBg}
               selectedDate={selectedDate}
               planTab={planTab} setPlanTab={setPlanTab}
               visibleTabs={['sala', 'cucina']}
