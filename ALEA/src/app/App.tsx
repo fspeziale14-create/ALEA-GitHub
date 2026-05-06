@@ -56,6 +56,12 @@ const staggerCSS = `
   animation: alea-si-out 0.5s cubic-bezier(0.4, 0, 0.8, 0) forwards !important;
   transform: translateY(0) !important;
 }
+.dark .alea-card, [data-mode="dark"] .alea-card {
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5) !important;
+}
+.alea-card {
+  box-shadow: 0 4px 24px rgba(0,0,0,0.1) !important;
+}
 `;
 if (typeof document !== 'undefined') {
   let _s = document.getElementById('alea-stagger-style');
@@ -1361,7 +1367,7 @@ function App() {
   // ===================================================================
   const renderReservationsSidebar = () => (
       <div className="w-full lg:w-72 xl:w-80 flex flex-col flex-shrink-0 z-0">
-          <Card className={`h-full flex flex-col ${cardBg}`}>
+          <Card className={`h-full flex flex-col ${cardBg} alea-card`}>
               <CardHeader className="pb-3 border-b border-black/5 dark:border-white/5">
                   <CardTitle className={`text-base flex justify-between items-center ${textColor}`}>
                       Prenotazioni In Arrivo <span className="bg-black/5 dark:bg-white/10 px-2 py-0.5 rounded-full text-xs font-mono">{incomingReservations.length}</span>
