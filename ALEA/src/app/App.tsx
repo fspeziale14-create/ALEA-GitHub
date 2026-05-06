@@ -2481,13 +2481,9 @@ function App() {
                     const cardIdx = navDirection > 0 ? i + 1 : (6 - i);
                     rows[rowIdx].push(
                       <SI key={card.key} i={cardIdx} navKey={navCount} navDir={navDirection}>
-                      <motion.button
-                        layoutId={`menu-card-${card.key}`}
+                      <button
                         onClick={() => handleMenuSubViewChange(card.key as any)}
-                        whileHover={{ y: -4, boxShadow: '0 20px 40px rgba(0,0,0,0.12)' }}
-                        whileTap={{ scale: 0.98 }}
-                        transition={{ layout: { duration: 0.35 }, default: { duration: 0.18 } }}
-                        className={`group text-left p-8 rounded-2xl border flex flex-col w-full h-full ${
+                        className={`group text-left p-8 rounded-2xl border flex flex-col w-full h-full transition-all duration-200 hover:shadow-xl hover:-translate-y-1 ${
                           isDinner ? 'bg-[#1E293B] border-[#334155] hover:border-[#967D62]' : 'bg-[#FDFAF5] border-[#EAE5DA] hover:border-[#967D62] hover:bg-white'
                         }`}
                       >
@@ -2501,7 +2497,7 @@ function App() {
                         <div className={`flex items-center gap-1.5 mt-6 text-sm font-semibold ${isDinner ? 'text-[#C4A882]' : 'text-[#967D62]'}`}>
                           Apri <ChevronRight className="w-4 h-4" />
                         </div>
-                      </motion.button>
+                      </button>
                       </SI>
                     );
                     return rows;
