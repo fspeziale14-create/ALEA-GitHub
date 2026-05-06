@@ -1,5 +1,6 @@
 import React from 'react';
 import { AttendibilitaResult } from './engine';
+import { motion, LayoutGroup } from 'motion/react';
 
 function idx(i: number, total: number, navDir: number) { return navDir > 0 ? i : (total - 1 - i); }
 function SI({ children, className, i = 0, navKey = 0, navDir = 1 }: { children: React.ReactNode; className?: string; i?: number; navKey?: number; navDir?: number }) {
@@ -847,7 +848,7 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
                                 {/* ===== COLONNA 1: MAGAZZINO ===== */}
-                                <Card className={`${cardBg} alea-card alea-card`} style={{ boxShadow: isDinner ? "0 8px 32px rgba(0,0,0,0.5)" : "0 4px 24px rgba(0,0,0,0.1)" }}>
+                                <Card className={`${cardBg} alea-card no-shadow`} style={{ boxShadow: 'none' }}>
                                     <CardHeader>
                                         <CardTitle className={`flex items-center gap-2 ${textColor}`}><ClipboardList className={`w-5 h-5 ${accentColor}`} /> Magazzino</CardTitle>
                                         <CardDescription className={mutedText}>Inserisci gli ingredienti con quantità ideale e attuale.</CardDescription>
@@ -1109,12 +1110,10 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                                                     <>
                                                         <p className={`text-[10px] font-bold uppercase tracking-wider pt-1 ${mutedText}`}>Preparazioni</p>
                                                         {preparations.map(prep => (
-                                                            <div key={prep.id} className={`p-3 rounded-lg border ${isDinner ? 'bg-[#0F172A] border-[#334155]/60' : 'bg-[#967D62]/5 border-[#967D62]/20'}`}>
-                                                                <div className="flex items-center gap-1.5">
+                                                            <div key={prep.id} className="flex items-center gap-1.5 py-1">
                                                                     <CookingPot className={`w-3.5 h-3.5 text-[#967D62]`} />
                                                                     <span className={`font-semibold text-sm ${textColor}`}>{prep.name}</span>
                                                                     <span className={`ml-1 text-xs ${mutedText}`}>— {prep.yieldQty}{prep.yieldUnit}/batch</span>
-                                                                </div>
                                                             </div>
                                                         ))}
                                                     </>
@@ -1125,15 +1124,19 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                                         {/* Registra consumo + Verifica Quantità */}
                                         {ingredients.length > 0 && (
                                             <div className="pt-2 space-y-2">
+                                                <motion.div whileTap={{ scale: 1.03 }} style={{ transformOrigin: 'center' }}>
                                                 <Button
                                                     onClick={() => { setShowExtraModal(true); setExtraMsg(null); setExtraIngId(''); setExtraQty(''); setExtraNote(''); setExtraDate(new Date().toISOString().split('T')[0]); setExtraCategory('waste'); }}
                                                     className={`w-full font-semibold ${isDinner ? 'bg-[#967D62] hover:bg-[#7A654E] text-[#F4F1EA]' : 'bg-[#B89A80] hover:bg-[#967D62] text-white'}`}
                                                 >
                                                     <Flame className="w-4 h-4 mr-2" /> Registra consumi interni
                                                 </Button>
+                                                </motion.div>
+                                                <motion.div whileTap={{ scale: 1.03 }} style={{ transformOrigin: 'center' }}>
                                                 <Button onClick={() => { setShowVerifyModal(true); setVerifyValues({}); setVerifyPhase('input'); loadVerifySnapshots(); }} className={`w-full font-semibold ${isDinner ? 'bg-[#967D62] hover:bg-[#7A654E] text-[#F4F1EA]' : 'bg-[#B89A80] hover:bg-[#967D62] text-white'}`}>
                                                     <CheckCircle2 className="w-4 h-4 mr-2" /> Verifica Quantità
                                                 </Button>
+                                                </motion.div>
                                             </div>
                                         )}
 
@@ -1154,7 +1157,7 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                                 </Card>
 
                                 {/* ===== COLONNA 2: PREPARAZIONI ===== */}
-                                <Card className={`${cardBg} alea-card alea-card`} style={{ boxShadow: isDinner ? "0 8px 32px rgba(0,0,0,0.5)" : "0 4px 24px rgba(0,0,0,0.1)" }}>
+                                <Card className={`${cardBg} alea-card no-shadow`} style={{ boxShadow: 'none' }}>
                                     <CardHeader>
                                         <CardTitle className={`flex items-center gap-2 ${textColor}`}><CookingPot className={`w-5 h-5 ${accentColor}`} /> Preparazioni Interne</CardTitle>
                                         <CardDescription className={mutedText}>Semi-lavorati fatti in casa. Definisci la ricetta e usala come ingrediente nei piatti.</CardDescription>
@@ -1836,7 +1839,11 @@ export function PianificazioneView(props: PianificazioneViewProps) {
 
                     <SI i={idx(1, 4, navDir)} navKey={navKey} navDir={navDir}>
                     {planTab === 'cucina' && (
-                        <div className="space-y-6">
+                        <motion.div
+                          layoutId="pian-card-cucina"
+                          transition={{ layout: { duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] } }}
+                          className="space-y-6"
+                        >
                             <Card className={`${cardBg} alea-card alea-card`} style={{ boxShadow: isDinner ? "0 8px 32px rgba(0,0,0,0.5)" : "0 4px 24px rgba(0,0,0,0.1)" }}>
                                 <CardHeader className="pb-3 border-b border-black/5 dark:border-white/5 flex flex-row items-center justify-between">
                                     <div>
@@ -1921,7 +1928,7 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                                     </div>
                                 </div>
                             )}
-                        </div>
+                        </motion.div>
                     )}
                     </SI>
                 </div>
@@ -1959,9 +1966,14 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                     </div>
 
                     {/* Volumi e Budget — attiva */}
-                    <button
+                    <LayoutGroup>
+                    <motion.button
+                        layoutId="pian-card-cucina"
                         onClick={() => setPlanTab('cucina')}
-                        className={`group text-left p-6 rounded-2xl border transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5
+                        whileHover={{ y: -4, boxShadow: isDinner ? '0 20px 40px rgba(0,0,0,0.5)' : '0 20px 40px rgba(0,0,0,0.12)' }}
+                        whileTap={{ scale: 0.97 }}
+                        transition={{ layout: { duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }, default: { duration: 0.18 } }}
+                        className={`group text-left p-6 rounded-2xl border
                             ${isDinner
                                 ? 'bg-[#1E293B] border-[#334155] hover:border-[#967D62]'
                                 : 'bg-[#FDFAF5] border-[#EAE5DA] hover:border-[#967D62] hover:bg-white'
@@ -1975,7 +1987,8 @@ export function PianificazioneView(props: PianificazioneViewProps) {
                         <div className={`flex items-center gap-1 mt-4 text-xs font-semibold ${isDinner ? 'text-[#C4A882]' : 'text-[#967D62]'}`}>
                             Apri <ChevronRight className="w-3.5 h-3.5" />
                         </div>
-                    </button>
+                    </motion.button>
+                    </LayoutGroup>
                 </div>
                 )}
                 </SI>
